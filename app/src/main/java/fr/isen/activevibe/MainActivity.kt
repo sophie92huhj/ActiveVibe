@@ -4,12 +4,16 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.google.firebase.database.*
+import com.google.firebase.firestore.auth.User
+import fr.isen.activevibe.ui.theme.ActiveVibeTheme
+
 
 class MainActivity : ComponentActivity() {
 
@@ -17,6 +21,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         // Référence à Firebase Database
         database = FirebaseDatabase.getInstance().getReference("utilisateurs")
@@ -29,7 +34,7 @@ class MainActivity : ComponentActivity() {
         database.child("001").addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (snapshot.exists()) {
-                    val user = snapshot.getValue(User::class.java)
+                    val user = snapshot.getValue(UserProfile::class.java)
                     if (user != null) {
                         nom.value = user.nom
                         email.value = user.email
@@ -47,21 +52,29 @@ class MainActivity : ComponentActivity() {
 
         // Affichage de l'interface
         setContent {
-            UserScreen(nom.value, email.value)
+            ActiveVibeTheme {
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    EditProfileScreen(
+                        modifier = Modifier.padding(innerPadding),
+                        nom = nom.value,
+                        email = email.value,
+                        saveProfile = { updatedProfile ->
+                            saveProfileToFirebase(updatedProfile)
+                        }
+                    )
+                }
+            }
         }
     }
-}
 
-// Modèle User pour correspondre à Firebase
-data class User(val nom: String = "", val email: String = "")
-
-@Composable
-fun UserScreen(nom: String, email: String) {
-    Column(
-        modifier = Modifier.padding(16.dp)
-    ) {
-        Text(text = "Nom: $nom", style = MaterialTheme.typography.bodyLarge)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "Email: $email", style = MaterialTheme.typography.bodyLarge)
+    // Fonction pour sauvegarder le profil dans Firebase Realtime Database
+    private fun saveProfileToFirebase(profile: UserProfile) {
+        database.child("001").setValue(profile).addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                Log.d("Firebase", "Profil mis à jour avec succès.")
+            } else {
+                Log.e("Firebase", "Erreur lors de la mise à jour du profil.")
+            }
+        }
     }
 }

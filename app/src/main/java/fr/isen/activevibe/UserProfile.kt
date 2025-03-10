@@ -1,6 +1,12 @@
 package fr.isen.activevibe
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "user_profile")
+
 data class UserProfile(
+    //@PrimaryKey(autoGenerate = true) val id: Int = 0,
     val nom: String = "",
     val email: String = "",
     val age: String = "",
@@ -9,10 +15,10 @@ data class UserProfile(
     val height: String = "",
     val weight: String = "",
     val sport: String = "",
-    val role: String = "",
+    //val role: String = "",
     val level: String = "",
     val team: String = "",
-    val achievements: String = ""
+    //val achievements: String = ""
 ) {
-    constructor() : this("", "", "", "", "", "", "", "", "", "", "", "")
+    constructor() : this("", "", "", "", "", "", "", "", "", "")
 }

@@ -49,8 +49,9 @@ class MainActivity : ComponentActivity() {
                 }
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    //EditProfileScreen(
-                    ModifyProfileScreen(
+                    EditProfileScreen(
+
+                    //ModifyProfileScreen(
                         modifier = Modifier.padding(innerPadding),
                         userProfile = userProfile.value,
                         saveProfile = { updatedProfile ->

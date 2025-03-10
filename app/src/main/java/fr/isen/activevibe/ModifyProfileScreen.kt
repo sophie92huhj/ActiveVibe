@@ -1,3 +1,4 @@
+/*
 package fr.isen.activevibe
 
 import android.net.Uri
@@ -260,4 +261,4 @@ fun EditableDropdownFieldWithIcon(
     }
 }
 
-
+*/

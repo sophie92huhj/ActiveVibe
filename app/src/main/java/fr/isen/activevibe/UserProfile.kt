@@ -1,9 +1,9 @@
 package fr.isen.activevibe
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
+//import androidx.room.Entity
+//import androidx.room.PrimaryKey
 
-@Entity(tableName = "user_profile")
+//@Entity(tableName = "user_profile")
 
 data class UserProfile(
     //@PrimaryKey(autoGenerate = true) val id: Int = 0,

@@ -60,6 +60,8 @@ dependencies {
     implementation ("androidx.compose.material:material-icons-extended:1.4.0")
     implementation(libs.firebase.firestore.ktx)
 
+    implementation ("androidx.compose.material3:material3:1.2.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

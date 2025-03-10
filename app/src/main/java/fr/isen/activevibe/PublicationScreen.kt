@@ -7,7 +7,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -50,13 +49,10 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
     ) { uri: Uri? -> imageUri = uri }
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
+        modifier = modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // ✅ En-tête épuré
+        // ✅ Titre en haut
         Text(
             text = "Ajouter une publication",
             fontSize = 22.sp,
@@ -66,35 +62,26 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // ✅ Sélection du sport (Menu déroulant stylisé)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .border(1.dp, Color.Gray)
-                .clickable { expanded = true }
-                .padding(12.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(text = sportType, fontSize = 16.sp)
-            Icon(
-                Icons.Default.ArrowDropDown,
-                contentDescription = "Ouvrir menu",
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            sports.forEach { sport ->
-                DropdownMenuItem(onClick = {
-                    sportType = sport
-                    expanded = false
-                }) {
-                    Text(text = sport)
+        // ✅ Sélection du sport
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = { expanded = true },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFF0F0F0))
+            ) {
+                Text(sportType, color = Color.Black)
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                sports.forEach { sport ->
+                    DropdownMenuItem(onClick = {
+                        sportType = sport
+                        expanded = false
+                    }) {
+                        Text(text = sport)
+                    }
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
 
         // ✅ Description
         OutlinedTextField(
@@ -106,58 +93,44 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
 
         // ✅ Champs spécifiques pour Course à pied et Natation
         if (sportType == "Course à pied" || sportType == "Natation") {
-            Spacer(modifier = Modifier.height(12.dp))
-            OutlinedTextField(value = duration, onValueChange = { duration = it }, label = { Text("Durée (minutes)") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = duration, onValueChange = { duration = it }, label = { Text("Durée (min)") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = distance, onValueChange = { distance = it }, label = { Text("Distance (km)") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = speed, onValueChange = { speed = it }, label = { Text("Vitesse (km/h)") }, modifier = Modifier.fillMaxWidth())
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
         // ✅ Sélection d’image facultative
         Box(
-            modifier = Modifier
-                .size(220.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color.LightGray),
+            modifier = Modifier.size(200.dp).clip(RoundedCornerShape(12.dp)).background(Color.LightGray),
             contentAlignment = Alignment.Center
         ) {
             imageUri?.let {
                 Image(painter = rememberAsyncImagePainter(it), contentDescription = null, modifier = Modifier.fillMaxSize())
-            } ?: Icon(Icons.Default.AddAPhoto, contentDescription = "Ajouter une image", modifier = Modifier.size(60.dp))
+            } ?: Icon(Icons.Default.AddAPhoto, contentDescription = "Ajouter une image", modifier = Modifier.size(80.dp), tint = Color.Gray)
         }
 
         Button(onClick = { imagePickerLauncher.launch("image/*") }) {
-            Text("Sélectionner une photo")
+            Text("Ajouter une photo")
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // ✅ Bouton de publication (Flottant et moderne)
-        FloatingActionButton(
-            onClick = {
-                if (sportType != "Sélectionner un sport" && description.isNotEmpty()) {
-                    val localImagePath = imageUri?.let { saveImageLocally(context, it) }
-                    savePublicationToDatabase(
-                        sportType, description, duration, distance, speed, localImagePath, context, database
-                    )
-                } else {
-                    Toast.makeText(context, "Veuillez remplir au moins le sport et la description", Toast.LENGTH_SHORT).show()
-                }
-            },
-            backgroundColor = Color(0xFF433AF1),
-            modifier = Modifier.size(56.dp)
-        ) {
+        // ✅ Bouton de publication
+        FloatingActionButton(onClick = {
+            if (sportType != "Sélectionner un sport" && description.isNotEmpty()) {
+                val localImagePath = imageUri?.let { saveImageLocally(context, it) }
+                savePublicationToDatabase(sportType, description, duration, distance, speed, localImagePath, context, database)
+            } else {
+                Toast.makeText(context, "Veuillez remplir au moins le sport et la description", Toast.LENGTH_SHORT).show()
+            }
+        }, backgroundColor = Color.Black) {
             Icon(Icons.Default.Send, contentDescription = "Publier", tint = Color.White)
         }
     }
 }
 
-// 💾 Fonction pour sauvegarder l'image en local
+// ✅ Fonction pour enregistrer une image localement
 fun saveImageLocally(context: Context, imageUri: Uri): String? {
     return try {
         val inputStream: InputStream? = context.contentResolver.openInputStream(imageUri)
-        val file = File(context.filesDir, "image_${UUID.randomUUID()}.jpg")
+        val file = File(context.filesDir, "image_${System.currentTimeMillis()}.jpg")
         val outputStream = FileOutputStream(file)
 
         inputStream?.copyTo(outputStream)
@@ -170,7 +143,7 @@ fun saveImageLocally(context: Context, imageUri: Uri): String? {
     }
 }
 
-// 📌 Fonction pour ajouter une publication dans Firebase
+// ✅ Fonction pour enregistrer une publication dans Firebase
 fun savePublicationToDatabase(
     sportType: String,
     description: String,
@@ -189,7 +162,8 @@ fun savePublicationToDatabase(
         duration = duration.takeIf { it?.isNotEmpty() == true },
         distance = distance.takeIf { it?.isNotEmpty() == true },
         speed = speed.takeIf { it?.isNotEmpty() == true },
-        imageUrl = imagePath
+        imageUrl = imagePath,
+        timestamp = System.currentTimeMillis()
     )
 
     newPublication.setValue(publication)

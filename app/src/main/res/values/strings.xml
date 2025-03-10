@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">ActiveVibe</string>
+    <string name="firebaseui_email_hint">Entrez votre e-mail</string>
+    <string name="firebaseui_password_hint">Mot de passe</string>
+    <string name="firebaseui_sign_in_default">Connexion</string>
+    <string name="firebaseui_tos_and_pp">En continuant, vous acceptez nos Conditions et notre Politique de confidentialité.</string>
 </resources>

@@ -1,67 +1,181 @@
 package fr.isen.activevibe
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
+import androidx.compose.ui.graphics.Color
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.google.firebase.database.*
+import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var database: DatabaseReference
+    private lateinit var auth: FirebaseAuth
+    private lateinit var googleSignInClient: GoogleSignInClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Référence à Firebase Database
-        database = FirebaseDatabase.getInstance().getReference("utilisateurs")
+        // ✅ Initialisation de Firebase Auth
+        auth = Firebase.auth
 
-        // States pour stocker les données
-        val nom = mutableStateOf("Chargement...")
-        val email = mutableStateOf("Chargement...")
+        // ✅ Configuration Google Sign-In
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
 
-        // Lire en temps réel les données Firebase
-        database.child("001").addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
-                    val user = snapshot.getValue(User::class.java)
-                    if (user != null) {
-                        nom.value = user.nom
-                        email.value = user.email
-                        Log.d("Firebase", "Données récupérées : Nom=${user.nom}, Email=${user.email}")
-                    }
+        googleSignInClient = GoogleSignIn.getClient(this, gso)
+
+        setContent {
+            CustomAuthScreen(
+                onEmailLoginClicked = { email, password -> loginWithEmail(email, password) },
+                onGoogleLoginClicked = { signInWithGoogle() }
+            )
+        }
+    }
+
+    /** ✅ Connexion avec Email et Mot de Passe **/
+    private fun loginWithEmail(email: String, password: String) {
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    val user = auth.currentUser
+                    Toast.makeText(this, "Bienvenue ${user?.email}", Toast.LENGTH_SHORT).show()
+                    Log.d("Firebase", "Connexion réussie : ${user?.email}")
                 } else {
-                    Log.e("Firebase", "Aucune donnée trouvée")
+                    Toast.makeText(this, "Échec de connexion : ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                    Log.e("Firebase", "Erreur connexion : ${task.exception?.message}")
                 }
             }
+    }
 
-            override fun onCancelled(error: DatabaseError) {
-                Log.e("Firebase", "Erreur Firebase : ${error.message}")
-            }
-        })
+    /** ✅ Lancer Google Sign-In **/
+    private fun signInWithGoogle() {
+        val signInIntent = googleSignInClient.signInIntent
+        googleSignInLauncher.launch(signInIntent)
+    }
 
-        // Affichage de l'interface
-        setContent {
-            UserScreen(nom.value, email.value)
+    /** ✅ Récupérer le Résultat Google Sign-In **/
+    private val googleSignInLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+            auth.signInWithCredential(credential)
+                .addOnCompleteListener(this) { task ->
+                    if (task.isSuccessful) {
+                        val user = auth.currentUser
+                        Toast.makeText(this, "Bienvenue ${user?.email}", Toast.LENGTH_SHORT).show()
+                        Log.d("Firebase", "Connexion Google réussie : ${user?.email}")
+                    } else {
+                        Toast.makeText(this, "Erreur connexion Google", Toast.LENGTH_SHORT).show()
+                        Log.e("Firebase", "Erreur Google : ${task.exception?.message}")
+                    }
+                }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Échec connexion Google", Toast.LENGTH_SHORT).show()
         }
     }
 }
 
-// Modèle User pour correspondre à Firebase
-data class User(val nom: String = "", val email: String = "")
-
 @Composable
-fun UserScreen(nom: String, email: String) {
+fun CustomAuthScreen(
+    onEmailLoginClicked: (String, String) -> Unit,
+    onGoogleLoginClicked: () -> Unit
+) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
     Column(
-        modifier = Modifier.padding(16.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Text(text = "Nom: $nom", style = MaterialTheme.typography.bodyLarge)
+        // ✅ Logo plus grand
+        Image(
+            painter = painterResource(id = R.drawable.logo),
+            contentDescription = "Logo ActiveVibe",
+            modifier = Modifier
+                .size(300.dp) // 📌 Taille augmentée (avant 150.dp)
+                .padding(bottom = 16.dp)
+        )
+
+        // ✅ Texte Bienvenue avec la couleur #433af1
+        Text(
+            text = "Bienvenue sur ActiveVibe",
+            fontSize = 26.sp, // 📌 Taille du texte augmentée
+            color = Color(0xFF433AF1) // 📌 Couleur changée en #433af1
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "Email: $email", style = MaterialTheme.typography.bodyLarge)
+
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Mot de passe") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ✅ Bouton Connexion Email avec couleur #433af1
+        Button(
+            onClick = { onEmailLoginClicked(email, password) },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF433AF1)), // 📌 Couleur mise à jour
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .clip(RoundedCornerShape(10.dp))
+        ) {
+            Text(text = "Se connecter avec une adresse e-mail", color = Color.White)
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // ✅ Bouton Connexion Google avec un gris foncé
+        Button(
+            onClick = { onGoogleLoginClicked() },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5A5A5A)), // 📌 Gris foncé pour contraster
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .clip(RoundedCornerShape(10.dp))
+        ) {
+            Text(text = "Se connecter avec Google", color = Color.White)
+        }
     }
 }

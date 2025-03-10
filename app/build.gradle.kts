@@ -56,11 +56,12 @@ dependencies {
     implementation(libs.firebase.database.ktx)
     implementation(libs.firebase.ui.auth) // FirebaseUI pour l'authentification
     implementation(libs.play.services.auth)
-
+    implementation(libs.coil.compose)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.material3) // ✅ Material 3 pour le design moderne
     implementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.material.icons.extended)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

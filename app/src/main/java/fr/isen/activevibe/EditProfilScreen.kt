@@ -37,13 +37,14 @@ fun EditProfileScreen(
     var height by remember { mutableStateOf(userProfile.height) }
     var weight by remember { mutableStateOf(userProfile.weight) }
     var sport by remember { mutableStateOf(userProfile.sport) }
-    var role by remember { mutableStateOf(userProfile.role) }
+    //var role by remember { mutableStateOf(userProfile.role) }
     var level by remember { mutableStateOf(userProfile.level) }
     var team by remember { mutableStateOf(userProfile.team) }
-    var achievements by remember { mutableStateOf(userProfile.achievements) }
+    //var achievements by remember { mutableStateOf(userProfile.achievements) }
 
     val genderOptions = listOf("Homme", "Femme")
     val levelOptions = listOf("Débutant", "Intermédiaire", "Avancé")
+    val sportOptions = listOf("Natation", "Course à pieds", "Vélo")
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -60,7 +61,7 @@ fun EditProfileScreen(
     val saveUserProfile = {
         val updatedUser = UserProfile(
             name, userEmail, age, gender, nationality,
-            height, weight, sport, role, level, team, achievements
+            height, weight, sport, level, team,
         )
         saveProfile(updatedUser)
     }
@@ -106,18 +107,21 @@ fun EditProfileScreen(
             Text("IMC : %.2f".format(bmi), style = MaterialTheme.typography.bodyMedium)
         }
 
-        OutlinedTextField(value = sport, onValueChange = { sport = it }, label = { Text("Sport pratiqué") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = role, onValueChange = { role = it }, label = { Text("Poste / Rôle spécifique") }, modifier = Modifier.fillMaxWidth())
+        DropdownField(label = "Sport pratiqué", options = sportOptions, selectedOption = sport, onOptionSelected = { sport = it })
+        //OutlinedTextField(value = role, onValueChange = { role = it }, label = { Text("Poste / Rôle spécifique") }, modifier = Modifier.fillMaxWidth())
 
         DropdownField(label = "Niveau", options = levelOptions, selectedOption = level, onOptionSelected = { level = it })
 
         OutlinedTextField(value = team, onValueChange = { team = it }, label = { Text("Club / Équipe actuelle") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = achievements, onValueChange = { achievements = it }, label = { Text("Palmarès / Récompenses") }, modifier = Modifier.fillMaxWidth())
+        //OutlinedTextField(value = achievements, onValueChange = { achievements = it }, label = { Text("Palmarès / Récompenses") }, modifier = Modifier.fillMaxWidth())
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = { saveUserProfile() }) {
-            Text("Sauvegarder")
+        Button(
+            onClick = { saveUserProfile() },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF433AF1))
+        ) {
+            Text("Enregistrer")
         }
     }
 }

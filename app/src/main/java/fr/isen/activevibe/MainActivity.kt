@@ -114,23 +114,30 @@ fun CustomAuthScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        // ✅ Texte "Bienvenue sur" au-dessus du logo
+        Text(
+            text = "Bienvenue sur",
+            fontSize = 22.sp,
+            color = Color(0xFF433AF1),
+            modifier = Modifier.padding(bottom = 8.dp) // Ajout d’un espacement avant le logo
+        )
+
         // ✅ Logo plus grand
         Image(
             painter = painterResource(id = R.drawable.logo),
             contentDescription = "Logo ActiveVibe",
             modifier = Modifier
-                .size(300.dp) // 📌 Taille augmentée (avant 150.dp)
-                .padding(bottom = 16.dp)
+                .size(250.dp) // Taille du logo ajustée
+                .padding(bottom = 8.dp) // Espacement après le logo
         )
 
-        // ✅ Texte Bienvenue avec la couleur #433af1
+        // ✅ Texte "Connexion" sous le logo
         Text(
-            text = "Bienvenue sur ActiveVibe",
-            fontSize = 26.sp, // 📌 Taille du texte augmentée
-            color = Color(0xFF433AF1) // 📌 Couleur changée en #433af1
+            text = "Connexion",
+            fontSize = 26.sp,
+            color = Color(0xFF433AF1),
+            modifier = Modifier.padding(bottom = 16.dp) // Espacement avant les champs
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
             value = email,
@@ -150,10 +157,10 @@ fun CustomAuthScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ✅ Bouton Connexion Email avec couleur #433af1
+        // ✅ Bouton Connexion Email avec couleur #433AF1
         Button(
             onClick = { onEmailLoginClicked(email, password) },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF433AF1)), // 📌 Couleur mise à jour
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF433AF1)), // Couleur mise à jour
             shape = RoundedCornerShape(10.dp),
             modifier = Modifier
                 .fillMaxWidth()
@@ -168,7 +175,7 @@ fun CustomAuthScreen(
         // ✅ Bouton Connexion Google avec un gris foncé
         Button(
             onClick = { onGoogleLoginClicked() },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5A5A5A)), // 📌 Gris foncé pour contraster
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5A5A5A)), // Gris foncé pour contraster
             shape = RoundedCornerShape(10.dp),
             modifier = Modifier
                 .fillMaxWidth()
@@ -179,3 +186,4 @@ fun CustomAuthScreen(
         }
     }
 }
+

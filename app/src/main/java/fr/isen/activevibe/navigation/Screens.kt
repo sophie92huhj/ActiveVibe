@@ -6,10 +6,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import fr.isen.activevibe.publications.FeedScreen
+import fr.isen.activevibe.publications.PublicationScreen
+
 
 @Composable
 fun HomeScreen() {
-    Text("Page: Fil d'actualité", fontSize = 24.sp)
+    FeedScreen()
 }
 
 @Composable
@@ -19,7 +22,7 @@ fun SearchScreen() {
 
 @Composable
 fun AddPostScreen() {
-    Text("Page: Ajouter un post", fontSize = 24.sp)
+    PublicationScreen()
 }
 
 @Composable

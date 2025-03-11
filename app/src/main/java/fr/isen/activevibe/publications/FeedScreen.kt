@@ -1,4 +1,4 @@
-package fr.isen.activevibe
+package fr.isen.activevibe.publications
 
 import android.graphics.BitmapFactory
 import android.util.Log
@@ -18,7 +18,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardElevation
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +42,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.res.painterResource
+import fr.isen.activevibe.Publication
 import fr.isen.activevibe.R
 
 

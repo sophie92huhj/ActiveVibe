@@ -1,4 +1,4 @@
-package fr.isen.activevibe
+package fr.isen.activevibe.publications
 
 import android.content.Context
 import android.net.Uri
@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -36,6 +35,7 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import fr.isen.activevibe.API.ImgurUploader
 import androidx.compose.ui.res.painterResource
+import fr.isen.activevibe.Publication
 import fr.isen.activevibe.R
 
 @Composable

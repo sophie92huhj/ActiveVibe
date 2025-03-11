@@ -1,5 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
 
-    <style name="Theme.ActiveVibe" parent="android:Theme.Material.Light.NoActionBar" />
+
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Thème Firebase personnalisé -->
+    <style name="FirebaseUITheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/primaryColor</item>
+        <item name="colorPrimaryVariant">@color/primaryDarkColor</item>
+        <item name="colorAccent">@color/accentColor</item>
+        <item name="android:windowBackground">@color/backgroundColor</item>
+        <item name="android:textColorPrimary">@color/accentColor</item>
+        <item name="android:buttonStyle">@style/FirebaseUIButtonCentered</item>
+
+    </style>
+
+    <!-- Style des boutons -->
+    <style name="FirebaseUIButtonCentered" parent="Widget.MaterialComponents.Button">
+        <item name="android:backgroundTint">@color/primaryColor</item>
+        <item name="android:textColor">@color/accentColor</item>
+    </style>
 </resources>

@@ -50,11 +50,18 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(platform("com.google.firebase:firebase-bom:33.10.0"))
-    implementation("com.google.firebase:firebase-analytics")
-    implementation(libs.firebase.database)
-    implementation ("androidx.compose.material:material-icons-extended:1.4.0")// Vérifie que la version est à jour
-    implementation ("androidx.compose.ui:ui:1.4.0")
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.database.ktx)
+    implementation(libs.firebase.ui.auth) // FirebaseUI pour l'authentification
+    implementation(libs.play.services.auth)
+
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.material3) // ✅ Material 3 pour le design moderne
+    implementation(libs.androidx.compose.ui.tooling)
+    implementation(libs.androidx.compose.foundation)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -1,6 +1,7 @@
 package fr.isen.activevibe
 
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -68,8 +69,10 @@ fun EditProfilScreen(
             name, userEmail, age, gender, nationality,
             height, weight, sport, level, team
         )
+        Log.d("Firebase", "Enregistrement du profil: $updatedUser")
         saveProfile(updatedUser)
     }
+
 
     Column(
         modifier = modifier

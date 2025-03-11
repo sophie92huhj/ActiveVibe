@@ -1,13 +1,9 @@
 package fr.isen.activevibe
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,39 +13,55 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.rememberAsyncImagePainter
 import fr.isen.activevibe.EditProfilScreen
-
-
-
-
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun App() {
+fun App(onEditClick: () -> Unit, userProfile: UserProfile) {
+    // Utilisation de `remember` et `mutableStateOf` pour garder un état mutable
     var showEditProfile by remember { mutableStateOf(false) }
-    var userProfile by remember { mutableStateOf(UserProfile("", "", "", "", "", "", "", "", "", "")) }
+    var nomUtilisateur by remember { mutableStateOf("") }  // Nom d'utilisateur mutable
 
+    // Récupérer l'ID de l'utilisateur actuel
+    val userId = FirebaseAuth.getInstance().currentUser?.uid
+
+    LaunchedEffect(userId) {
+        if (userId != null) {
+            // Récupérer le nomUtilisateur depuis Firestore
+            val db = FirebaseFirestore.getInstance()
+            db.collection("users")
+                .document(userId)
+                .get()
+                .addOnSuccessListener { document ->
+                    if (document != null) {
+                        nomUtilisateur = document.getString("nomUtilisateur") ?: "Nom non disponible"
+                    }
+                }
+        }
+    }
+
+    // Si showEditProfile est vrai, affiche l'écran d'édition
     if (showEditProfile) {
         EditProfilScreen(
             userProfile = userProfile,
             saveProfile = { updatedProfile ->
-                userProfile = updatedProfile
+                // Mettre à jour les informations si nécessaire
                 showEditProfile = false
             },
             onBackClick = { showEditProfile = false }
         )
     } else {
-        ProfileScreen { showEditProfile = true }
+        ProfileScreen(userProfile = userProfile, onEditClick = { showEditProfile = true })
     }
 }
 
 @Composable
-fun ProfileScreen(onEditClick: () -> Unit) {
+fun ProfileScreen(userProfile: UserProfile, onEditClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -59,9 +71,10 @@ fun ProfileScreen(onEditClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .size(90.dp)
-                    .border(2.dp, Color.Black, CircleShape)
+                    //.border(2.dp, Color.Black, CircleShape) // La bordure noire
                     .clip(CircleShape)
                     .background(Color.Transparent)
+                    .offset(y = 12.dp)  // Appliquer le décalage au Box entier
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.profile), // Charge l'image depuis le chemin donné
@@ -73,26 +86,25 @@ fun ProfileScreen(onEditClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column {
-                Text(text = "Nom d'Utilisateur", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(text = userProfile.nom, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Text(text = "📍 Paris, France", fontSize = 13.sp, color = Color.Gray)
             }
         }
 
-
         Spacer(modifier = Modifier.height(25.dp))
 
-        // Bio alignée à gauche
+// Bio alignée à gauche
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(text = "À propos de moi", fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Text(
-                text = "Ajouter une biographie",
+                text = "Ajouter une biographie",  // Texte fixe à afficher
                 fontSize = 14.sp,
                 color = Color.Gray
             )
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
 
+        Spacer(modifier = Modifier.height(10.dp))
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -116,8 +128,6 @@ fun ProfileScreen(onEditClick: () -> Unit) {
                 letterSpacing = 0.5.sp // Espacement léger des lettres
             )
         }
-
-
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -164,9 +174,3 @@ fun GridPlaceholder() {
         }
     }
 }
-
-
-
-
-
-

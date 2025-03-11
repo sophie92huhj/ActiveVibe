@@ -62,6 +62,10 @@ dependencies {
 
     implementation ("androidx.compose.material3:material3:1.2.0")
 
+    implementation ("com.google.firebase:firebase-firestore-ktx")
+    implementation ("com.google.firebase:firebase-auth-ktx")
+
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

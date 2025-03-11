@@ -1,6 +1,7 @@
 package fr.isen.activevibe.recherche
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -92,16 +93,12 @@ fun UserCard(username: String) {
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // ✅ Rond pour la future photo de profil
+            // ✅ Rond avec une bordure fine bleue
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(
-                        brush = Brush.linearGradient(
-                            listOf(Color(0xFF433AF1), Color(0xFF433AF1))
-                        )
-                    )
+                    .size(48.dp) // Taille du rond
+                    .clip(CircleShape) // Crée un cercle
+                    .border(2.dp, Color(0xFF433AF1), CircleShape) // Bordure fine bleue
             )
 
             Spacer(modifier = Modifier.width(12.dp))

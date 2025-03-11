@@ -88,11 +88,6 @@ fun EditProfilScreen(
             }
         }
 
-        // Bouton de modification global (crayon)
-        IconButton(onClick = { isEditing = !isEditing }) {
-            Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier le profil")
-        }
-
         Spacer(modifier = Modifier.height(16.dp))
 
         // Photo de profil
@@ -115,7 +110,18 @@ fun EditProfilScreen(
             }
         }
 
+        // Ligne avec le bouton crayon aligné à droite
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            IconButton(onClick = { isEditing = !isEditing }) {
+                Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier le profil")
+            }
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
+
 
         // Nom
         Row(verticalAlignment = Alignment.CenterVertically) {

@@ -12,6 +12,16 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,7 +83,7 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
             Button(
                 onClick = { expanded = true },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFF0F0F0))
+                colors = ButtonDefaults.buttonColors(Color(0xFFF0F0F0))
             ) {
                 Text(sportType, color = Color.Black)
             }
@@ -82,9 +92,9 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
                     DropdownMenuItem(onClick = {
                         sportType = sport
                         expanded = false
-                    }) {
+                    }, text = {
                         Text(text = sport)
-                    }
+                    })
                 }
             }
         }
@@ -111,7 +121,7 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
                     .size(180.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color.LightGray),
-                elevation = 4.dp
+                elevation = CardDefaults.cardElevation(4.dp)
             ) {
                 Image(
                     painter = rememberAsyncImagePainter(imageUri),
@@ -125,7 +135,7 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
 
         Button(
             onClick = { imagePickerLauncher.launch("image/*") },
-            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF433AF1)), // Même couleur que le titre
+            colors = ButtonDefaults.buttonColors(Color(0xFF433AF1)), // Même couleur que le titre
             modifier = Modifier.clip(RoundedCornerShape(12.dp))
         ) {
             Text("Ajouter une photo", color = Color.White)
@@ -147,7 +157,7 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
                     Toast.makeText(context, "Veuillez remplir au moins le sport et la description", Toast.LENGTH_SHORT).show()
                 }
             },
-            backgroundColor = Color(0xFF433AF1) // Même couleur que "Ajouter une publication"
+            modifier = Modifier.background(Color(0xFF433AF1)) // Même couleur que "Ajouter une publication"
         ) {
             Icon(Icons.Default.Send, contentDescription = "Publier", tint = Color.White)
         }

@@ -9,12 +9,24 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.ModeComment
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardElevation
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +46,7 @@ import androidx.compose.ui.res.painterResource
 import fr.isen.activevibe.R
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedScreen(modifier: Modifier = Modifier) {
     val database = FirebaseDatabase.getInstance().getReference("publications")
@@ -82,8 +95,7 @@ fun FeedScreen(modifier: Modifier = Modifier) {
                     )
                 }
             },
-            backgroundColor = Color.White, // Fond blanc comme sur l'image
-            elevation = 4.dp
+            modifier = Modifier.background(Color.White), // Fond blanc comme sur l'image
         )
 
         if (publications.isEmpty()) {
@@ -180,7 +192,7 @@ fun PublicationCard(publication: Publication) {
     // ✅ Affichage de la publication
     Card(
         shape = RoundedCornerShape(8.dp),
-        elevation = 4.dp,
+        elevation = CardDefaults.cardElevation(4.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 8.dp)
@@ -219,12 +231,12 @@ fun PublicationCard(publication: Publication) {
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false }
                     ) {
-                        DropdownMenuItem(onClick = {
+                        DropdownMenuItem(text = {
+                            Text("Supprimer la publication")
+                        }, onClick = {
                             publicationRef.removeValue() // ✅ Supprime la publication
                             showMenu = false
-                        }) {
-                            Text("Supprimer la publication")
-                        }
+                        })
                     }
                 }
             }

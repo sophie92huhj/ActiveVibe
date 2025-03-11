@@ -1,13 +1,11 @@
 package fr.isen.activevibe.navigation
 
-import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fr.isen.activevibe.publications.FeedScreen
 import fr.isen.activevibe.publications.PublicationScreen
+import fr.isen.activevibe.profil.ProfileScreen
 
 
 @Composable
@@ -31,10 +29,8 @@ fun LikedPostsScreen() {
 }
 
 @Composable
-fun ProfileScreen() {
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text(text = "Page: Profil", fontSize = 24.sp)
-    }
+fun ProfileScreen1() {
+   ProfileScreen()
 }
 
 @Composable

@@ -1,4 +1,4 @@
-package fr.isen.activevibe
+package fr.isen.activevibe.profil
 
 import android.net.Uri
 import android.util.Log
@@ -25,6 +25,7 @@ import coil.compose.rememberAsyncImagePainter
 import androidx.compose.material3.ExposedDropdownMenuBox
 //import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import fr.isen.activevibe.UserProfile
 
 @Composable
 fun EditProfilScreen(

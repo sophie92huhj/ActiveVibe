@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import fr.isen.activevibe.navigation.BottomNavigationBar
 import fr.isen.activevibe.navigation.TopBar
 import fr.isen.activevibe.navigation.* // ✅ Importation de toutes les fonctions de `Screens.kt`
+import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,6 +20,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             var selectedItem by remember { mutableStateOf(0) }
             var isDarkMode by remember { mutableStateOf(false) }
+
+            val currentUser = FirebaseAuth.getInstance().currentUser
+            val userId = currentUser?.uid ?: "" // ✅ Récupère l'UID de l'utilisateur connecté
 
             MaterialTheme(
                 colorScheme = if (isDarkMode) darkColorScheme() else lightColorScheme()
@@ -43,7 +47,7 @@ class MainActivity : ComponentActivity() {
                             1 -> SearchScreen()
                             2 -> AddPostScreen()
                             3 -> LikedPostsScreen()
-                            4 -> ProfileScreen()
+                            4 -> ProfileScreen1()
                             5 -> MessagesScreen()
                         }
                     }

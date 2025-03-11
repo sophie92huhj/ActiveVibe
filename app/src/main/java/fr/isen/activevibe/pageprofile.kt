@@ -22,6 +22,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
 import fr.isen.activevibe.EditProfilScreen
 
 
@@ -54,14 +55,22 @@ fun ProfileScreen(onEditClick: () -> Unit) {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Image de profil (cercle noir avec bords fins)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
                     .size(90.dp)
-                    .border(2.dp, Color.Black, CircleShape) // Bord fin noir
-                    .background(Color.Transparent, CircleShape)
-            )
+                    .border(2.dp, Color.Black, CircleShape)
+                    .clip(CircleShape)
+                    .background(Color.Transparent)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.profile), // Charge l'image depuis le chemin donné
+                    contentDescription = "Photo de profil",
+                    modifier = Modifier
+                        .size(90.dp)
+                        .clip(CircleShape)
+                )
+            }
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(text = "Nom d'Utilisateur", fontSize = 18.sp, fontWeight = FontWeight.Bold)

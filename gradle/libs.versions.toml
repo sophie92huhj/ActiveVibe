@@ -13,10 +13,16 @@ composeBom = "2025.02.00"
 firebase-bom = "32.7.3"
 google-services = "4.4.2"
 firebaseDatabase = "21.0.0"
-firebaseFirestoreKtx = "25.1.2"
+compose = "1.5.1"
+firebase-auth-ktx = "22.3.1"
+firebase-database-ktx = "20.2.1"
+firebase-ui-auth = "8.0.2"
+play-services-auth = "20.7.0"
+material3 = "1.1.1"
 materialIconsExtended = "1.7.8"
 materialIconsExtendedVersion = "1.5.0"
-
+okhttp = "4.12.0"
+retrofit = "2.9.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

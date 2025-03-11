@@ -64,14 +64,11 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
 
     implementation(libs.androidx.material.icons.extended.v150)
-    implementation (libs.retrofit)
     implementation (libs.converter.gson)
-    implementation (libs.okhttp)
 
     implementation("io.coil-kt:coil-compose:2.5.0")
 
     implementation ("androidx.compose.material:material-icons-extended:1.4.0")
-    implementation(libs.firebase.firestore.ktx)
 
     implementation ("androidx.compose.material3:material3:1.2.0")
 

@@ -30,6 +30,9 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import coil.compose.rememberAsyncImagePainter
+import androidx.compose.ui.res.painterResource
+import fr.isen.activevibe.R
+
 
 @Composable
 fun FeedScreen(modifier: Modifier = Modifier) {
@@ -63,12 +66,21 @@ fun FeedScreen(modifier: Modifier = Modifier) {
         // ✅ Barre supérieure bleue
         TopAppBar(
             title = {
-                Text(
-                    "Active Vibe",
-                    color = Color(0xFF433AF1), // Code couleur bleu basé sur l'image
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        painter = painterResource(id = R.drawable.activevibe), // Ton logo dans res/drawable
+                        contentDescription = "Logo ActiveVibe",
+                        modifier = Modifier
+                            .size(64.dp) // Taille réduite du logo
+                            .padding(end = 8.dp) // Espacement entre le logo et le texte
+                    )
+                    Text(
+                        "Active Vibe",
+                        color = Color(0xFF433AF1), // Bleu de l'application
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
+                }
             },
             backgroundColor = Color.White, // Fond blanc comme sur l'image
             elevation = 4.dp

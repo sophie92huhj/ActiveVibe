@@ -25,6 +25,8 @@ import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import fr.isen.activevibe.API.ImgurUploader
+import androidx.compose.ui.res.painterResource
+import fr.isen.activevibe.R
 
 @Composable
 fun PublicationScreen(modifier: Modifier = Modifier) {
@@ -36,7 +38,7 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
     var speed by remember { mutableStateOf("") }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var expanded by remember { mutableStateOf(false) }
-    val sports = listOf("Course à pied", "Tennis", "Rugby", "Natation")
+    val sports = listOf("Course à pied", "Tennis", "Rugby", "Natation", "Autre")
 
     val database = FirebaseDatabase.getInstance().getReference("publications")
 
@@ -48,6 +50,14 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // ✅ Affichage du logo
+        Image(
+            painter = painterResource(id = R.drawable.activevibe),
+            contentDescription = "Logo ActiveVibe",
+            modifier = Modifier
+                .size(120.dp) // Ajuste la taille selon ton besoin
+                .padding(bottom = 12.dp)
+        )
         // ✅ Titre en haut
         Text(
             text = "Ajouter une publication",
@@ -94,21 +104,33 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
             OutlinedTextField(value = speed, onValueChange = { speed = it }, label = { Text("Vitesse (km/h)") }, modifier = Modifier.fillMaxWidth())
         }
 
-        // ✅ Sélection d’image facultative
-        Box(
-            modifier = Modifier.size(200.dp).clip(RoundedCornerShape(12.dp)).background(Color.LightGray),
-            contentAlignment = Alignment.Center
+        // ✅ Afficher la miniature SEULEMENT si une photo est sélectionnée
+        if (imageUri != null) {
+            Card(
+                modifier = Modifier
+                    .size(180.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.LightGray),
+                elevation = 4.dp
+            ) {
+                Image(
+                    painter = rememberAsyncImagePainter(imageUri),
+                    contentDescription = "Image sélectionnée",
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        Button(
+            onClick = { imagePickerLauncher.launch("image/*") },
+            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF433AF1)), // Même couleur que le titre
+            modifier = Modifier.clip(RoundedCornerShape(12.dp))
         ) {
-            imageUri?.let {
-                Image(painter = rememberAsyncImagePainter(it), contentDescription = null, modifier = Modifier.fillMaxSize())
-            } ?: Icon(Icons.Default.AddAPhoto, contentDescription = "Ajouter une image", modifier = Modifier.size(80.dp), tint = Color.Gray)
+            Text("Ajouter une photo", color = Color.White)
         }
 
-        Button(onClick = { imagePickerLauncher.launch("image/*") }) {
-            Text("Ajouter une photo")
-        }
-
-        // ✅ Bouton de publication avec upload Imgur
         FloatingActionButton(
             onClick = {
                 if (sportType != "Sélectionner un sport" && description.isNotEmpty()) {
@@ -125,7 +147,7 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
                     Toast.makeText(context, "Veuillez remplir au moins le sport et la description", Toast.LENGTH_SHORT).show()
                 }
             },
-            backgroundColor = Color.Black
+            backgroundColor = Color(0xFF433AF1) // Même couleur que "Ajouter une publication"
         ) {
             Icon(Icons.Default.Send, contentDescription = "Publier", tint = Color.White)
         }

@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,10 +24,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
-import java.io.File
-import java.io.FileOutputStream
-import java.io.InputStream
-import java.util.*
+import fr.isen.activevibe.API.ImgurUploader
 
 @Composable
 fun PublicationScreen(modifier: Modifier = Modifier) {
@@ -112,45 +108,38 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
             Text("Ajouter une photo")
         }
 
-        // ✅ Bouton de publication
-        FloatingActionButton(onClick = {
-            if (sportType != "Sélectionner un sport" && description.isNotEmpty()) {
-                val localImagePath = imageUri?.let { saveImageLocally(context, it) }
-                savePublicationToDatabase(sportType, description, duration, distance, speed, localImagePath, context, database)
-            } else {
-                Toast.makeText(context, "Veuillez remplir au moins le sport et la description", Toast.LENGTH_SHORT).show()
-            }
-        }, backgroundColor = Color.Black) {
+        // ✅ Bouton de publication avec upload Imgur
+        FloatingActionButton(
+            onClick = {
+                if (sportType != "Sélectionner un sport" && description.isNotEmpty()) {
+                    imageUri?.let { uri ->
+                        ImgurUploader.uploadToImgur(context, uri, { imageUrl ->
+                            savePublicationToDatabase(sportType, description, duration, distance, speed, imageUrl, context, database)
+                        }) {
+                            Toast.makeText(context, "Échec de l'upload de l'image", Toast.LENGTH_SHORT).show()
+                        }
+                    } ?: run {
+                        savePublicationToDatabase(sportType, description, duration, distance, speed, null, context, database)
+                    }
+                } else {
+                    Toast.makeText(context, "Veuillez remplir au moins le sport et la description", Toast.LENGTH_SHORT).show()
+                }
+            },
+            backgroundColor = Color.Black
+        ) {
             Icon(Icons.Default.Send, contentDescription = "Publier", tint = Color.White)
         }
     }
 }
 
-// ✅ Fonction pour enregistrer une image localement
-fun saveImageLocally(context: Context, imageUri: Uri): String? {
-    return try {
-        val inputStream: InputStream? = context.contentResolver.openInputStream(imageUri)
-        val file = File(context.filesDir, "image_${System.currentTimeMillis()}.jpg")
-        val outputStream = FileOutputStream(file)
-
-        inputStream?.copyTo(outputStream)
-        inputStream?.close()
-        outputStream.close()
-
-        file.absolutePath
-    } catch (e: Exception) {
-        null
-    }
-}
-
-// ✅ Fonction pour enregistrer une publication dans Firebase
+// ✅ Fonction pour enregistrer une publication dans Firebase avec l'URL de l'image
 fun savePublicationToDatabase(
     sportType: String,
     description: String,
     duration: String?,
     distance: String?,
     speed: String?,
-    imagePath: String?,
+    imageUrl: String?,  // Changement ici : stocker l'URL Imgur
     context: Context,
     database: DatabaseReference
 ) {
@@ -162,7 +151,7 @@ fun savePublicationToDatabase(
         duration = duration.takeIf { it?.isNotEmpty() == true },
         distance = distance.takeIf { it?.isNotEmpty() == true },
         speed = speed.takeIf { it?.isNotEmpty() == true },
-        imageUrl = imagePath,
+        imageUrl = imageUrl,  // Stocker l'URL Imgur
         timestamp = System.currentTimeMillis()
     )
 

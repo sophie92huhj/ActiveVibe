@@ -29,6 +29,7 @@ import com.google.firebase.database.*
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import coil.compose.rememberAsyncImagePainter
 
 @Composable
 fun FeedScreen(modifier: Modifier = Modifier) {
@@ -217,9 +218,16 @@ fun PublicationCard(publication: Publication) {
             }
 
             // ✅ Image de la publication
-            publication.imageUrl?.let { imagePath ->
-                if (imagePath.isNotEmpty()) {
-                    DisplayImage(imagePath)
+            publication.imageUrl?.let { imageUrl ->
+                if (imageUrl.isNotEmpty()) {
+                    Image(
+                        painter = rememberAsyncImagePainter(imageUrl),
+                        contentDescription = "Image de la publication",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(400.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    )
                 }
             }
 

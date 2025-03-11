@@ -1,8 +1,6 @@
 package fr.isen.activevibe
 
-import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.ui.graphics.Color
 import androidx.activity.ComponentActivity
@@ -27,11 +25,9 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import fr.isen.activevibe.FirstTimeScreen
-import fr.isen.activevibe.AlreadyConnectedScreen
-import fr.isen.activevibe.ForgotPasswordScreen
-
-
+import fr.isen.activevibe.connexion.AlreadyConnectedScreen
+import fr.isen.activevibe.connexion.FirstTimeScreen
+import fr.isen.activevibe.connexion.ForgotPasswordScreen
 
 
 class ConnexionActivity : ComponentActivity() {

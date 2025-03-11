@@ -46,6 +46,7 @@ fun EditProfilScreen(
     var team by remember { mutableStateOf(userProfile.team) }
 
     // Etat global pour savoir si on est en mode édition ou non
+    //etat
     var isEditing by remember { mutableStateOf(false) }
 
     val genderOptions = listOf("Homme", "Femme")

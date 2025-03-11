@@ -3,9 +3,12 @@ package fr.isen.activevibe.navigation
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import fr.isen.activevibe.likes.LikeScreen
 import fr.isen.activevibe.publications.FeedScreen
 import fr.isen.activevibe.publications.PublicationScreen
 import fr.isen.activevibe.profil.ProfileScreen
+//import fr.isen.activevibe.likes.likeScreen
 
 
 @Composable
@@ -24,8 +27,8 @@ fun AddPostScreen() {
 }
 
 @Composable
-fun LikedPostsScreen() {
-    Text("Page: Posts Likés", fontSize = 24.sp)
+fun LikedPostsScreen(navController: NavController) {
+    LikeScreen(navController)
 }
 
 @Composable

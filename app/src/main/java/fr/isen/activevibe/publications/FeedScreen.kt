@@ -103,19 +103,26 @@ fun FeedScreen(modifier: Modifier = Modifier) {
 
 @Composable
 fun PublicationCard(publication: Publication) {
-    var commentText by remember { mutableStateOf("") }
+    val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+    val userLikesRef = FirebaseDatabase.getInstance().getReference("users").child(userId).child("likes")
+    val commentsRef = FirebaseDatabase.getInstance().getReference("publications").child(publication.id).child("comments")
+
+    var isLiked by remember { mutableStateOf(false) }
     var showCommentInput by remember { mutableStateOf(false) }
-    var comments by remember { mutableStateOf(listOf<Pair<String, String>>()) } // (NomUtilisateur, Message)
-    var showMenu by remember { mutableStateOf(false) }
-    var commentToDelete by remember { mutableStateOf<String?>(null) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    var commentText by remember { mutableStateOf("") }
+    var comments by remember { mutableStateOf(listOf<Pair<String, String>>()) } // Liste des commentaires (Nom, Message)
 
-    val database = FirebaseDatabase.getInstance().getReference("publications")
-    val publicationRef = database.child(publication.id)
-    val commentsRef = publicationRef.child("comments")
-
-    // ✅ Charger les commentaires avec le nom de l'utilisateur
+    // Vérifier si la publication est déjà likée
     LaunchedEffect(Unit) {
+        userLikesRef.child(publication.id).addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                isLiked = snapshot.exists()
+            }
+
+            override fun onCancelled(error: DatabaseError) {}
+        })
+
+        // Charger les commentaires
         commentsRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val fetchedComments = mutableListOf<Pair<String, String>>()
@@ -133,42 +140,6 @@ fun PublicationCard(publication: Publication) {
         })
     }
 
-    // ✅ Boîte de dialogue de confirmation pour supprimer un commentaire
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Supprimer le commentaire") },
-            text = { Text("Êtes-vous sûr de vouloir supprimer ce commentaire ? Cette action est irréversible.") },
-            confirmButton = {
-                Button(onClick = {
-                    commentToDelete?.let { comment ->
-                        commentsRef.orderByChild("message").equalTo(comment)
-                            .addListenerForSingleValueEvent(object : ValueEventListener {
-                                override fun onDataChange(snapshot: DataSnapshot) {
-                                    for (child in snapshot.children) {
-                                        child.ref.removeValue()
-                                    }
-                                }
-
-                                override fun onCancelled(error: DatabaseError) {
-                                    Log.e("FeedScreen", "Erreur suppression commentaire : ${error.message}")
-                                }
-                            })
-                    }
-                    showDeleteDialog = false
-                }) {
-                    Text("Supprimer")
-                }
-            },
-            dismissButton = {
-                Button(onClick = { showDeleteDialog = false }) {
-                    Text("Annuler")
-                }
-            }
-        )
-    }
-
-    // ✅ Affichage de la publication
     Card(
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(4.dp),
@@ -196,27 +167,9 @@ fun PublicationCard(publication: Publication) {
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
-                Spacer(modifier = Modifier.weight(1f))
-
-                Box {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Options")
-                    }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
-                    ) {
-                        DropdownMenuItem(text = {
-                            Text("Supprimer la publication")
-                        }, onClick = {
-                            publicationRef.removeValue()
-                            showMenu = false
-                        })
-                    }
-                }
             }
 
-            // ✅ Image
+            // ✅ Image de la publication
             publication.imageUrl?.let { imageUrl ->
                 if (imageUrl.isNotEmpty()) {
                     Image(
@@ -230,30 +183,40 @@ fun PublicationCard(publication: Publication) {
                 }
             }
 
-            // ✅ Description
+            // ✅ Description de la publication
             Text(
                 text = publication.description,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
             )
 
-            // ✅ Barre d'actions (Like, Commentaire, Partage)
+            // ✅ Barre d'actions (Like, Commentaire)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(12.dp),
                 horizontalArrangement = Arrangement.Start
             ) {
-                IconButton(onClick = { /* Ajouter un like */ }) {
-                    Icon(Icons.Default.FavoriteBorder, contentDescription = "Like", tint = Color.Black)
+                IconButton(onClick = {
+                    if (isLiked) {
+                        userLikesRef.child(publication.id).removeValue()
+                    } else {
+                        userLikesRef.child(publication.id).setValue(true)
+                    }
+                    isLiked = !isLiked
+                }) {
+                    Icon(
+                        imageVector = if (isLiked) Icons.Filled.FavoriteBorder else Icons.Filled.FavoriteBorder,
+                        contentDescription = "Like",
+                        tint = if (isLiked) Color.Red else Color.Black
+                    )
                 }
                 IconButton(onClick = { showCommentInput = !showCommentInput }) {
                     Icon(Icons.Default.ModeComment, contentDescription = "Commenter", tint = Color.Black)
                 }
-
             }
 
-            // ✅ Champ de commentaire
+            // ✅ Affichage du champ de commentaire
             if (showCommentInput) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     OutlinedTextField(
@@ -265,7 +228,6 @@ fun PublicationCard(publication: Publication) {
                     Button(
                         onClick = {
                             if (commentText.isNotEmpty()) {
-                                val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return@Button
                                 val userRef = FirebaseDatabase.getInstance().getReference("users").child(userId)
 
                                 userRef.child("nomUtilisateur").get().addOnSuccessListener { snapshot ->
@@ -290,7 +252,7 @@ fun PublicationCard(publication: Publication) {
                 }
             }
 
-            // ✅ Affichage des commentaires avec nom de l'utilisateur
+            // ✅ Affichage des commentaires sous la publication
             if (comments.isNotEmpty()) {
                 Column(modifier = Modifier.padding(horizontal = 12.dp)) {
                     comments.forEach { (username, message) ->
@@ -305,14 +267,6 @@ fun PublicationCard(publication: Publication) {
                                 color = Color.Black,
                                 modifier = Modifier.weight(1f)
                             )
-                            IconButton(
-                                onClick = {
-                                    commentToDelete = message
-                                    showDeleteDialog = true
-                                }
-                            ) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "Supprimer", tint = Color.Gray)
-                            }
                         }
                     }
                 }

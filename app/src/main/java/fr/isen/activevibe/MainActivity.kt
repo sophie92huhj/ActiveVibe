@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.rememberNavController
 import fr.isen.activevibe.navigation.BottomNavigationBar
 import fr.isen.activevibe.navigation.TopBar
 import fr.isen.activevibe.navigation.* // ✅ Importation de toutes les fonctions de `Screens.kt`
@@ -20,6 +21,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
+            val navController = rememberNavController()
             var selectedItem by remember { mutableStateOf(0) }
             var isDarkMode by remember { mutableStateOf(false) }
 
@@ -52,7 +54,7 @@ class MainActivity : ComponentActivity() {
                             0 -> HomeScreen()  // ✅ Toutes les fonctions sont bien appelées
                             1 -> SearchScreen()
                             2 -> AddPostScreen()
-                            3 -> LikedPostsScreen()
+                            3 -> LikedPostsScreen(navController)
                             4 -> ProfileScreen1()
                             5 -> MessagesScreen()
                         }

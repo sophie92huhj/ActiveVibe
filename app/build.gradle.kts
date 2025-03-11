@@ -74,6 +74,9 @@ dependencies {
 
     implementation ("com.google.firebase:firebase-firestore-ktx")
     implementation ("com.google.firebase:firebase-auth-ktx")
+    implementation(libs.androidx.media3.common.ktx)
+    implementation(libs.androidx.navigation.runtime.android)
+    implementation(libs.androidx.navigation.compose)
 
 
     testImplementation(libs.junit)

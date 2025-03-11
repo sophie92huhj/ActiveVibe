@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.database.*
+import androidx.compose.runtime.saveable.rememberSaveable
+
 
 class MainActivity : ComponentActivity() {
 
@@ -33,6 +35,7 @@ class MainActivity : ComponentActivity() {
         // States pour stocker les données
         val nom = mutableStateOf("Chargement...")
         val email = mutableStateOf("Chargement...")
+        val isLoading = mutableStateOf(true)  // Indicateur de chargement
 
         // Lire en temps réel les données Firebase
         database.child("001").addValueEventListener(object : ValueEventListener {
@@ -42,6 +45,7 @@ class MainActivity : ComponentActivity() {
                     if (user != null) {
                         nom.value = user.nom
                         email.value = user.email
+                        isLoading.value = false  // Fin du chargement
                         Log.d("Firebase", "Données récupérées : Nom=${user.nom}, Email=${user.email}")
                     }
                 } else {
@@ -51,15 +55,23 @@ class MainActivity : ComponentActivity() {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e("Firebase", "Erreur Firebase : ${error.message}")
+                isLoading.value = false  // Fin du chargement même en cas d'erreur
             }
         })
 
         // Affichage de l'interface
         setContent {
             var selectedItem by remember { mutableStateOf(0) }
-            var isDarkMode by remember { mutableStateOf(false) }
+            // Utilisation de `rememberSaveable` pour préserver le mode sombre à travers les recompositions
+            var isDarkMode by rememberSaveable { mutableStateOf(false) }  // Ajout de `rememberSaveable`
             val items = listOf("Fil d'actualité", "Recherche", "Ajouter", "Posts Likés", "Profil")
-            val icons = listOf(Icons.Filled.Home, Icons.Filled.Search, Icons.Filled.Add, Icons.Filled.Favorite, Icons.Filled.Person)
+            val icons = listOf(
+                Icons.Filled.Home,
+                Icons.Filled.Search,
+                Icons.Filled.Add,
+                Icons.Filled.Favorite,
+                Icons.Filled.Person
+            )
 
             MaterialTheme(
                 colorScheme = if (isDarkMode) darkColorScheme() else lightColorScheme()
@@ -72,20 +84,25 @@ class MainActivity : ComponentActivity() {
                                 .padding(16.dp)
                                 .statusBarsPadding()  // Pour éviter que l'icône touche la barre de notification
                         ) {
-                            // Positionner l'icône Send
-                            IconButton(
-                                onClick = {
-                                    Log.d("Send Button", "Send button clicked")
-                                },
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)  // Aligner l'icône en haut à droite
-                                    .offset(y = 10.dp)  // Ajuste la position de l'icône
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Send,
-                                    contentDescription = "Envoyer",
-                                    modifier = Modifier.size(40.dp)  // Taille de l'icône
-                                )
+                            // Afficher l'icône Send uniquement si la page sélectionnée est "Fil d'actualité"
+                            if (selectedItem == 0) {
+                                // Positionner l'icône Send
+                                IconButton(
+                                    onClick = {
+                                        // Lorsqu'on clique sur l'icône "Send", on navigue vers la page des messages
+                                        selectedItem = 5
+                                        Log.d("Send Button", "Send button clicked")
+                                    },
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)  // Aligner l'icône en haut à droite
+                                        .offset(y = 10.dp)  // Ajuste la position de l'icône
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Send,
+                                        contentDescription = "Envoyer",
+                                        modifier = Modifier.size(40.dp)  // Taille de l'icône
+                                    )
+                                }
                             }
                         }
                     },
@@ -93,7 +110,10 @@ class MainActivity : ComponentActivity() {
                         NavigationBar {
                             items.forEachIndexed { index, _ ->
                                 if (index == 2) {
-                                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                                    Box(
+                                        modifier = Modifier.weight(1f),
+                                        contentAlignment = Alignment.Center
+                                    ) {
                                         FloatingActionButton(onClick = { selectedItem = index }) {
                                             Icon(Icons.Filled.Add, contentDescription = "Ajouter")
                                         }
@@ -128,10 +148,27 @@ class MainActivity : ComponentActivity() {
                             4 -> Column(modifier = Modifier.padding(16.dp)) {
                                 Text(text = "Page: Profil", fontSize = 24.sp)
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Text(text = "Nom: ${nom.value}", style = MaterialTheme.typography.bodyLarge)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(text = "Email: ${email.value}", style = MaterialTheme.typography.bodyLarge)
+
+                                // Affichage en attente des données
+                                if (isLoading.value) {
+                                    CircularProgressIndicator()
+                                } else {
+                                    Text(
+                                        text = "Nom: ${nom.value}",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Email: ${email.value}",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                }
                             }
+
+                            5 -> Text(
+                                "Page: Messages",
+                                fontSize = 24.sp
+                            )  // Affichage de la page Messages
                         }
                     }
                 }

@@ -8,7 +8,7 @@ import fr.isen.activevibe.likes.LikeScreen
 import fr.isen.activevibe.publications.FeedScreen
 import fr.isen.activevibe.publications.PublicationScreen
 import fr.isen.activevibe.profil.ProfileScreen
-//import fr.isen.activevibe.likes.likeScreen
+import fr.isen.activevibe.recherche.RechercheScreen
 
 
 @Composable
@@ -18,7 +18,7 @@ fun HomeScreen() {
 
 @Composable
 fun SearchScreen() {
-    Text("Page: Recherche", fontSize = 24.sp)
+    RechercheScreen()
 }
 
 @Composable

@@ -2,11 +2,12 @@ package fr.isen.activevibe
 
 data class Publication(
     val id: String = "",
-    val sportType: String = "",
+    val username: String? = null, // Ajout du champ username
+    val imageUrl: String? = null,
     val description: String = "",
-    val imageUrl: String? = null,  // 📷 Image facultative
-    val duration: String? = null,  // ⏱ Durée de l'effort (optionnel)
-    val distance: String? = null,  // 📏 Distance (optionnel)
-    val speed: String? = null,     // ⚡ Vitesse (optionnel)
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long? = null,
+    val sportType: String? = null,
+    val duration: String? = null,
+    val distance: String? = null,
+    val speed: String? = null
 )

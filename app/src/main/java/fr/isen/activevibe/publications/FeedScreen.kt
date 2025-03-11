@@ -42,6 +42,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.res.painterResource
+import com.google.firebase.auth.FirebaseAuth
 import fr.isen.activevibe.Publication
 import fr.isen.activevibe.R
 
@@ -76,27 +77,6 @@ fun FeedScreen(modifier: Modifier = Modifier) {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // ✅ Barre supérieure bleue
-        TopAppBar(
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(id = R.drawable.activevibe), // Ton logo dans res/drawable
-                        contentDescription = "Logo ActiveVibe",
-                        modifier = Modifier
-                            .size(64.dp) // Taille réduite du logo
-                            .padding(end = 8.dp) // Espacement entre le logo et le texte
-                    )
-                    Text(
-                        "Active Vibe",
-                        color = Color(0xFF433AF1), // Bleu de l'application
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
-                    )
-                }
-            },
-            modifier = Modifier.background(Color.White), // Fond blanc comme sur l'image
-        )
 
         if (publications.isEmpty()) {
             Log.d("UI", "Aucune publication affichée.") // 🔥 DEBUG
@@ -125,25 +105,24 @@ fun FeedScreen(modifier: Modifier = Modifier) {
 fun PublicationCard(publication: Publication) {
     var commentText by remember { mutableStateOf("") }
     var showCommentInput by remember { mutableStateOf(false) }
-    var comments by remember { mutableStateOf(listOf<String>()) }
-    var showMenu by remember { mutableStateOf(false) } // ✅ Gérer le menu déroulant
-
-    var commentToDelete by remember { mutableStateOf<String?>(null) } // ✅ Stocker le commentaire sélectionné
-    var showDeleteDialog by remember { mutableStateOf(false) } // ✅ Gérer la boîte de confirmation
+    var comments by remember { mutableStateOf(listOf<Pair<String, String>>()) } // (NomUtilisateur, Message)
+    var showMenu by remember { mutableStateOf(false) }
+    var commentToDelete by remember { mutableStateOf<String?>(null) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     val database = FirebaseDatabase.getInstance().getReference("publications")
-    val publicationRef = database.child(publication.id) // Référence pour supprimer la publication
+    val publicationRef = database.child(publication.id)
     val commentsRef = publicationRef.child("comments")
 
-    // ✅ Charger les commentaires depuis Firebase
+    // ✅ Charger les commentaires avec le nom de l'utilisateur
     LaunchedEffect(Unit) {
         commentsRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val fetchedComments = mutableListOf<String>()
+                val fetchedComments = mutableListOf<Pair<String, String>>()
                 for (child in snapshot.children) {
-                    val comment = child.getValue(String::class.java)
-                    Log.d("FirebaseDebug", "Comment récupéré: $comment") // 🔥 DEBUG
-                    comment?.let { fetchedComments.add(it) }
+                    val username = child.child("nomUtilisateur").getValue(String::class.java) ?: "Utilisateur inconnu"
+                    val message = child.child("message").getValue(String::class.java) ?: ""
+                    fetchedComments.add(username to message)
                 }
                 comments = fetchedComments
             }
@@ -163,11 +142,11 @@ fun PublicationCard(publication: Publication) {
             confirmButton = {
                 Button(onClick = {
                     commentToDelete?.let { comment ->
-                        commentsRef.orderByValue().equalTo(comment)
+                        commentsRef.orderByChild("message").equalTo(comment)
                             .addListenerForSingleValueEvent(object : ValueEventListener {
                                 override fun onDataChange(snapshot: DataSnapshot) {
                                     for (child in snapshot.children) {
-                                        child.ref.removeValue() // ✅ Supprime le commentaire
+                                        child.ref.removeValue()
                                     }
                                 }
 
@@ -198,8 +177,7 @@ fun PublicationCard(publication: Publication) {
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Column(modifier = Modifier.background(Color.White)) {
-
-            // ✅ En-tête (Nom d'utilisateur, options)
+            // ✅ En-tête
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -211,9 +189,7 @@ fun PublicationCard(publication: Publication) {
                         .size(40.dp)
                         .clip(CircleShape)
                         .background(Color.Gray)
-                ) {
-                    // Placeholder pour la photo de profil
-                }
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = publication.username ?: "Utilisateur inconnu",
@@ -222,7 +198,6 @@ fun PublicationCard(publication: Publication) {
                 )
                 Spacer(modifier = Modifier.weight(1f))
 
-                // ✅ Bouton "..." pour le menu (suppression de publication)
                 Box {
                     IconButton(onClick = { showMenu = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "Options")
@@ -234,14 +209,14 @@ fun PublicationCard(publication: Publication) {
                         DropdownMenuItem(text = {
                             Text("Supprimer la publication")
                         }, onClick = {
-                            publicationRef.removeValue() // ✅ Supprime la publication
+                            publicationRef.removeValue()
                             showMenu = false
                         })
                     }
                 }
             }
 
-            // ✅ Image de la publication
+            // ✅ Image
             publication.imageUrl?.let { imageUrl ->
                 if (imageUrl.isNotEmpty()) {
                     Image(
@@ -262,24 +237,6 @@ fun PublicationCard(publication: Publication) {
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
             )
 
-            // ✅ Statistiques (temps, distance, vitesse si renseignés)
-            if (!publication.duration.isNullOrEmpty() ||
-                !publication.distance.isNullOrEmpty() ||
-                !publication.speed.isNullOrEmpty()
-            ) {
-                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
-                    publication.duration?.let {
-                        Text(text = "Durée : $it min", fontSize = 12.sp, color = Color.Gray)
-                    }
-                    publication.distance?.let {
-                        Text(text = "Distance : $it km", fontSize = 12.sp, color = Color.Gray)
-                    }
-                    publication.speed?.let {
-                        Text(text = "Vitesse : $it km/h", fontSize = 12.sp, color = Color.Gray)
-                    }
-                }
-            }
-
             // ✅ Barre d'actions (Like, Commentaire, Partage)
             Row(
                 modifier = Modifier
@@ -293,9 +250,7 @@ fun PublicationCard(publication: Publication) {
                 IconButton(onClick = { showCommentInput = !showCommentInput }) {
                     Icon(Icons.Default.ModeComment, contentDescription = "Commenter", tint = Color.Black)
                 }
-                IconButton(onClick = { /* Partager la publication */ }) {
-                    Icon(Icons.Default.Send, contentDescription = "Partager", tint = Color.Black)
-                }
+
             }
 
             // ✅ Champ de commentaire
@@ -310,10 +265,22 @@ fun PublicationCard(publication: Publication) {
                     Button(
                         onClick = {
                             if (commentText.isNotEmpty()) {
-                                val newCommentRef = commentsRef.push()
-                                newCommentRef.setValue(commentText)
-                                commentText = ""
-                                showCommentInput = false
+                                val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return@Button
+                                val userRef = FirebaseDatabase.getInstance().getReference("users").child(userId)
+
+                                userRef.child("nomUtilisateur").get().addOnSuccessListener { snapshot ->
+                                    val username = snapshot.value as? String ?: "Utilisateur inconnu"
+
+                                    val newCommentRef = commentsRef.push()
+                                    val commentData = mapOf(
+                                        "uid" to userId,
+                                        "nomUtilisateur" to username,
+                                        "message" to commentText
+                                    )
+                                    newCommentRef.setValue(commentData)
+                                    commentText = ""
+                                    showCommentInput = false
+                                }
                             }
                         },
                         modifier = Modifier.padding(top = 8.dp)
@@ -323,25 +290,24 @@ fun PublicationCard(publication: Publication) {
                 }
             }
 
-            // ✅ Affichage des commentaires
+            // ✅ Affichage des commentaires avec nom de l'utilisateur
             if (comments.isNotEmpty()) {
                 Column(modifier = Modifier.padding(horizontal = 12.dp)) {
-                    comments.forEach { comment ->
+                    comments.forEach { (username, message) ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = comment,
+                                text = "$username : $message",
                                 fontSize = 14.sp,
-                                color = Color.Gray,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black,
                                 modifier = Modifier.weight(1f)
                             )
-
-                            // ✅ Bouton "..." pour supprimer un commentaire
                             IconButton(
                                 onClick = {
-                                    commentToDelete = comment
+                                    commentToDelete = message
                                     showDeleteDialog = true
                                 }
                             ) {
@@ -354,7 +320,6 @@ fun PublicationCard(publication: Publication) {
         }
     }
 }
-
 
 @Composable
 fun DisplayImage(imagePath: String) {

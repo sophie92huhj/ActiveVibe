@@ -1,5 +1,7 @@
 package fr.isen.activevibe.connexion
 
+import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -7,15 +9,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-
+import fr.isen.activevibe.MainActivity
 
 @Composable
 fun FirstTimeScreen() {
+    val context = LocalContext.current  // ✅ Récupération du contexte pour la navigation
     val auth = FirebaseAuth.getInstance()
     val database = FirebaseDatabase.getInstance().reference.child("users")
 
@@ -81,7 +85,7 @@ fun FirstTimeScreen() {
             onClick = {
                 if (nomUtilisateur.isNotEmpty() && nom.isNotEmpty() && prenom.isNotEmpty()) {
                     isChecking = true
-                    checkAndRegisterUser(nomUtilisateur, nom, prenom, database, auth) { success, message ->
+                    checkAndRegisterUser(nomUtilisateur, nom, prenom, database, auth, context) { success, message ->
                         isChecking = false
                         if (!success) {
                             errorMessage = message
@@ -113,6 +117,7 @@ private fun checkAndRegisterUser(
     prenom: String,
     database: DatabaseReference,
     auth: FirebaseAuth,
+    context: Context, // ✅ Ajout du contexte pour la navigation
     callback: (Boolean, String?) -> Unit
 ) {
     database.orderByChild("nomUtilisateur").equalTo(username).addListenerForSingleValueEvent(object : ValueEventListener {
@@ -131,7 +136,12 @@ private fun checkAndRegisterUser(
                     database.child(uid).setValue(userData)
                         .addOnSuccessListener {
                             Log.d("Firebase", "Utilisateur ajouté avec succès")
-                            callback(true, null) // Succès
+                            callback(true, null)
+
+                            // ✅ Redirection vers MainActivity après validation
+                            val intent = Intent(context, MainActivity::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            context.startActivity(intent)
                         }
                         .addOnFailureListener { e ->
                             callback(false, "Erreur lors de l'enregistrement : ${e.message}")

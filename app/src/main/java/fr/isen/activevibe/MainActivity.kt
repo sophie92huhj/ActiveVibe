@@ -12,6 +12,8 @@ import fr.isen.activevibe.navigation.BottomNavigationBar
 import fr.isen.activevibe.navigation.TopBar
 import fr.isen.activevibe.navigation.* // ✅ Importation de toutes les fonctions de `Screens.kt`
 import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.ui.graphics.Color
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,8 +27,12 @@ class MainActivity : ComponentActivity() {
             val userId = currentUser?.uid ?: "" // ✅ Récupère l'UID de l'utilisateur connecté
 
             MaterialTheme(
-                colorScheme = if (isDarkMode) darkColorScheme() else lightColorScheme()
-            ) {
+                colorScheme = if (isDarkMode) darkColorScheme() else lightColorScheme().copy(
+                    background = Color.White,  // ✅ Force le fond en blanc
+                    surface = Color.White // ✅ Évite le beige sur certains composants
+                )
+            )
+                {
                 Scaffold(
                     topBar = { TopBar(selectedItem, onItemSelected = { selectedItem = it }) },
                     bottomBar = { BottomNavigationBar(selectedItem, onItemSelected = { selectedItem = it }) },

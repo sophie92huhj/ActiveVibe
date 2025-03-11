@@ -7,6 +7,7 @@ package fr.isen.activevibe
 
 data class UserProfile(
     //@PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val nomUtilisateur: String = "",
     val nom: String = "",
     val email: String = "",
     val age: String = "",

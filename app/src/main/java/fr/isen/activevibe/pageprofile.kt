@@ -22,14 +22,26 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import fr.isen.activevibe.EditProfilScreen
+
+
+
 
 
 @Composable
 fun App() {
     var showEditProfile by remember { mutableStateOf(false) }
+    var userProfile by remember { mutableStateOf(UserProfile("John Doe", "johndoe@email.com", "25", "Homme", "Français", "180", "75", "Natation", "Intermédiaire", "Équipe A")) }
 
     if (showEditProfile) {
-        EditProfilScreen { showEditProfile = false }
+        EditProfilScreen(
+            userProfile = userProfile,
+            saveProfile = { updatedProfile ->
+                userProfile = updatedProfile
+                showEditProfile = false
+            },
+            onBackClick = { showEditProfile = false }
+        )
     } else {
         ProfileScreen { showEditProfile = true }
     }
@@ -143,7 +155,7 @@ fun GridPlaceholder() {
         }
     }
 }
-
+/*
 @Composable
 fun EditProfilScreen(onBack: () -> Unit) {
     Column(
@@ -164,6 +176,9 @@ fun EditProfilScreen(onBack: () -> Unit) {
         }
     }
 }
+*/
+
+
 
 
 

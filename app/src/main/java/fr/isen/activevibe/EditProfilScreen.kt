@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,18 +25,12 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 //import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
-//import androidx.compose.material3.icons.Icons
-//import androidx.compose.material3.icons.filled.Edit
-
 @Composable
-fun EditProfileScreen(
+fun EditProfilScreen(
     modifier: Modifier = Modifier,
     userProfile: UserProfile,
-    saveProfile: (UserProfile) -> Unit
+    saveProfile: (UserProfile) -> Unit,
+    onBackClick: () -> Unit
 ) {
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
     var name by remember { mutableStateOf(userProfile.nom) }
@@ -68,7 +63,7 @@ fun EditProfileScreen(
     val saveUserProfile = {
         val updatedUser = UserProfile(
             name, userEmail, age, gender, nationality,
-            height, weight, sport, level, team,
+            height, weight, sport, level, team
         )
         saveProfile(updatedUser)
     }
@@ -80,6 +75,18 @@ fun EditProfileScreen(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
+        // Bouton retour
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { onBackClick() }) {
+                Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Retour")
+            }
+        }
+
+        // Photo de profil
         Box(
             modifier = Modifier
                 .size(120.dp)
@@ -95,98 +102,94 @@ fun EditProfileScreen(
                     contentScale = ContentScale.Crop
                 )
             } else {
-                Text("Photo", color = Color.White)
+                Text("photo", color = Color.White)
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Nom
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nom") }, modifier = Modifier.weight(1f))
-            IconButton(onClick = { /* Logique de modification */ }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nom") }, modifier = Modifier.fillMaxWidth())
+            IconButton(onClick = { /* Action de modification du nom */ }) {
                 Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier le nom")
             }
         }
 
         // Email
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(value = userEmail, onValueChange = { userEmail = it }, label = { Text("Email") }, modifier = Modifier.weight(1f))
-            IconButton(onClick = { /* Logique de modification */ }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(value = userEmail, onValueChange = { userEmail = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
+            IconButton(onClick = { /* Action de modification de l'email */ }) {
                 Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier l'email")
             }
         }
 
         // Âge
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(value = age, onValueChange = { age = it }, label = { Text("Âge") }, modifier = Modifier.weight(1f))
-            IconButton(onClick = { /* Logique de modification */ }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(value = age, onValueChange = { age = it }, label = { Text("Âge") }, modifier = Modifier.fillMaxWidth())
+            IconButton(onClick = { /* Action de modification de l'âge */ }) {
                 Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier l'âge")
             }
         }
 
         // Sexe
-        Row(modifier = Modifier.fillMaxWidth()) {
-            DropdownField(label = "Sexe", options = genderOptions, selectedOption = gender, onOptionSelected = { gender = it })
-            IconButton(onClick = { /* Logique de modification */ }) {
-                Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier le sexe")
-            }
+        DropdownField(label = "Sexe", options = genderOptions, selectedOption = gender, onOptionSelected = { gender = it })
+        IconButton(onClick = { /* Action de modification du sexe */ }) {
+            Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier le sexe")
         }
 
         // Nationalité
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(value = nationality, onValueChange = { nationality = it }, label = { Text("Nationalité") }, modifier = Modifier.weight(1f))
-            IconButton(onClick = { /* Logique de modification */ }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(value = nationality, onValueChange = { nationality = it }, label = { Text("Nationalité") }, modifier = Modifier.fillMaxWidth())
+            IconButton(onClick = { /* Action de modification de la nationalité */ }) {
                 Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier la nationalité")
             }
         }
 
         // Taille
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(value = height, onValueChange = { height = it }, label = { Text("Taille (cm)") }, modifier = Modifier.weight(1f))
-            IconButton(onClick = { /* Logique de modification */ }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(value = height, onValueChange = { height = it }, label = { Text("Taille (cm)") }, modifier = Modifier.fillMaxWidth())
+            IconButton(onClick = { /* Action de modification de la taille */ }) {
                 Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier la taille")
             }
         }
 
         // Poids
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(value = weight, onValueChange = { weight = it }, label = { Text("Poids (kg)") }, modifier = Modifier.weight(1f))
-            IconButton(onClick = { /* Logique de modification */ }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(value = weight, onValueChange = { weight = it }, label = { Text("Poids (kg)") }, modifier = Modifier.fillMaxWidth())
+            IconButton(onClick = { /* Action de modification du poids */ }) {
                 Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier le poids")
             }
         }
 
+        // IMC
         if (bmi != null) {
             Text("IMC : %.2f".format(bmi), style = MaterialTheme.typography.bodyMedium)
         }
 
         // Sport
-        Row(modifier = Modifier.fillMaxWidth()) {
-            DropdownField(label = "Sport pratiqué", options = sportOptions, selectedOption = sport, onOptionSelected = { sport = it })
-            IconButton(onClick = { /* Logique de modification */ }) {
-                Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier le sport")
-            }
+        DropdownField(label = "Sport pratiqué", options = sportOptions, selectedOption = sport, onOptionSelected = { sport = it })
+        IconButton(onClick = { /* Action de modification du sport */ }) {
+            Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier le sport")
         }
 
         // Niveau
-        Row(modifier = Modifier.fillMaxWidth()) {
-            DropdownField(label = "Niveau", options = levelOptions, selectedOption = level, onOptionSelected = { level = it })
-            IconButton(onClick = { /* Logique de modification */ }) {
-                Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier le niveau")
-            }
+        DropdownField(label = "Niveau", options = levelOptions, selectedOption = level, onOptionSelected = { level = it })
+        IconButton(onClick = { /* Action de modification du niveau */ }) {
+            Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier le niveau")
         }
 
-        // Équipe
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(value = team, onValueChange = { team = it }, label = { Text("Club / Équipe actuelle") }, modifier = Modifier.weight(1f))
-            IconButton(onClick = { /* Logique de modification */ }) {
+        // Club / Équipe actuelle
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(value = team, onValueChange = { team = it }, label = { Text("Club / Équipe actuelle") }, modifier = Modifier.fillMaxWidth())
+            IconButton(onClick = { /* Action de modification du club / équipe */ }) {
                 Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier l'équipe")
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Bouton Enregistrer
         Button(
             onClick = { saveUserProfile() },
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF433AF1))

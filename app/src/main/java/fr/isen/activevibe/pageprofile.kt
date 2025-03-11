@@ -31,7 +31,7 @@ import fr.isen.activevibe.EditProfilScreen
 @Composable
 fun App() {
     var showEditProfile by remember { mutableStateOf(false) }
-    var userProfile by remember { mutableStateOf(UserProfile("John Doe", "johndoe@email.com", "25", "Homme", "Français", "180", "75", "Natation", "Intermédiaire", "Équipe A")) }
+    var userProfile by remember { mutableStateOf(UserProfile("", "", "", "", "", "", "", "", "", "")) }
 
     if (showEditProfile) {
         EditProfilScreen(
@@ -155,28 +155,7 @@ fun GridPlaceholder() {
         }
     }
 }
-/*
-@Composable
-fun EditProfilScreen(onBack: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(text = "Édition du Profil", fontSize = 22.sp, fontWeight = FontWeight.Bold)
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        OutlinedButton(
-            onClick = onBack,
-            modifier = Modifier.fillMaxWidth(0.6f)
-        ) {
-            Text(text = "Retour")
-        }
-    }
-}
-*/
 
 
 

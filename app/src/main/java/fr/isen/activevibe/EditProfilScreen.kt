@@ -44,6 +44,9 @@ fun EditProfilScreen(
     var level by remember { mutableStateOf(userProfile.level) }
     var team by remember { mutableStateOf(userProfile.team) }
 
+    // Etat global pour savoir si on est en mode édition ou non
+    var isEditing by remember { mutableStateOf(false) }
+
     val genderOptions = listOf("Homme", "Femme")
     val levelOptions = listOf("Débutant", "Intermédiaire", "Avancé")
     val sportOptions = listOf("Natation", "Course à pieds", "Vélo")
@@ -75,7 +78,6 @@ fun EditProfilScreen(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         // Bouton retour
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -85,6 +87,13 @@ fun EditProfilScreen(
                 Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Retour")
             }
         }
+
+        // Bouton de modification global (crayon)
+        IconButton(onClick = { isEditing = !isEditing }) {
+            Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier le profil")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Photo de profil
         Box(
@@ -110,56 +119,77 @@ fun EditProfilScreen(
 
         // Nom
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nom") }, modifier = Modifier.fillMaxWidth())
-            IconButton(onClick = { /* Action de modification du nom */ }) {
-                Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier le nom")
-            }
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Nom") },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = isEditing // Si en mode édition, le champ est modifiable
+            )
         }
 
         // Email
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(value = userEmail, onValueChange = { userEmail = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
-            IconButton(onClick = { /* Action de modification de l'email */ }) {
-                Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier l'email")
-            }
+            OutlinedTextField(
+                value = userEmail,
+                onValueChange = { userEmail = it },
+                label = { Text("Email") },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = isEditing // Si en mode édition, le champ est modifiable
+            )
         }
 
         // Âge
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(value = age, onValueChange = { age = it }, label = { Text("Âge") }, modifier = Modifier.fillMaxWidth())
-            IconButton(onClick = { /* Action de modification de l'âge */ }) {
-                Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier l'âge")
-            }
+            OutlinedTextField(
+                value = age,
+                onValueChange = { age = it },
+                label = { Text("Âge") },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = isEditing // Si en mode édition, le champ est modifiable
+            )
         }
 
         // Sexe
-        DropdownField(label = "Sexe", options = genderOptions, selectedOption = gender, onOptionSelected = { gender = it })
-        IconButton(onClick = { /* Action de modification du sexe */ }) {
-            Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier le sexe")
-        }
+        DropdownField(
+            label = "Sexe",
+            options = genderOptions,
+            selectedOption = gender,
+            onOptionSelected = { gender = it },
+            enabled = isEditing // Si en mode édition, le champ est modifiable
+        )
 
         // Nationalité
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(value = nationality, onValueChange = { nationality = it }, label = { Text("Nationalité") }, modifier = Modifier.fillMaxWidth())
-            IconButton(onClick = { /* Action de modification de la nationalité */ }) {
-                Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier la nationalité")
-            }
+            OutlinedTextField(
+                value = nationality,
+                onValueChange = { nationality = it },
+                label = { Text("Nationalité") },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = isEditing // Si en mode édition, le champ est modifiable
+            )
         }
 
         // Taille
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(value = height, onValueChange = { height = it }, label = { Text("Taille (cm)") }, modifier = Modifier.fillMaxWidth())
-            IconButton(onClick = { /* Action de modification de la taille */ }) {
-                Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier la taille")
-            }
+            OutlinedTextField(
+                value = height,
+                onValueChange = { height = it },
+                label = { Text("Taille (cm)") },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = isEditing // Si en mode édition, le champ est modifiable
+            )
         }
 
         // Poids
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(value = weight, onValueChange = { weight = it }, label = { Text("Poids (kg)") }, modifier = Modifier.fillMaxWidth())
-            IconButton(onClick = { /* Action de modification du poids */ }) {
-                Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier le poids")
-            }
+            OutlinedTextField(
+                value = weight,
+                onValueChange = { weight = it },
+                label = { Text("Poids (kg)") },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = isEditing // Si en mode édition, le champ est modifiable
+            )
         }
 
         // IMC
@@ -168,23 +198,32 @@ fun EditProfilScreen(
         }
 
         // Sport
-        DropdownField(label = "Sport pratiqué", options = sportOptions, selectedOption = sport, onOptionSelected = { sport = it })
-        IconButton(onClick = { /* Action de modification du sport */ }) {
-            Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier le sport")
-        }
+        DropdownField(
+            label = "Sport pratiqué",
+            options = sportOptions,
+            selectedOption = sport,
+            onOptionSelected = { sport = it },
+            enabled = isEditing // Si en mode édition, le champ est modifiable
+        )
 
         // Niveau
-        DropdownField(label = "Niveau", options = levelOptions, selectedOption = level, onOptionSelected = { level = it })
-        IconButton(onClick = { /* Action de modification du niveau */ }) {
-            Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier le niveau")
-        }
+        DropdownField(
+            label = "Niveau",
+            options = levelOptions,
+            selectedOption = level,
+            onOptionSelected = { level = it },
+            enabled = isEditing // Si en mode édition, le champ est modifiable
+        )
 
         // Club / Équipe actuelle
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(value = team, onValueChange = { team = it }, label = { Text("Club / Équipe actuelle") }, modifier = Modifier.fillMaxWidth())
-            IconButton(onClick = { /* Action de modification du club / équipe */ }) {
-                Icon(imageVector = Icons.Filled.Edit, contentDescription = "Modifier l'équipe")
-            }
+            OutlinedTextField(
+                value = team,
+                onValueChange = { team = it },
+                label = { Text("Club / Équipe actuelle") },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = isEditing // Si en mode édition, le champ est modifiable
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -201,7 +240,13 @@ fun EditProfilScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DropdownField(label: String, options: List<String>, selectedOption: String, onOptionSelected: (String) -> Unit) {
+fun DropdownField(
+    label: String,
+    options: List<String>,
+    selectedOption: String,
+    onOptionSelected: (String) -> Unit,
+    enabled: Boolean = true
+) {
     var expanded by remember { mutableStateOf(false) }
 
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
@@ -210,7 +255,8 @@ fun DropdownField(label: String, options: List<String>, selectedOption: String, 
             onValueChange = {},
             label = { Text(label) },
             modifier = Modifier.menuAnchor().fillMaxWidth(),
-            readOnly = true
+            readOnly = true,
+            enabled = enabled // Le champ est activé uniquement en mode édition
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->
@@ -222,4 +268,5 @@ fun DropdownField(label: String, options: List<String>, selectedOption: String, 
         }
     }
 }
+
 

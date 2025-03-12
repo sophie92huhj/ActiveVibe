@@ -18,14 +18,26 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.material3.ExposedDropdownMenuBox
 //import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.text.font.FontWeight
 import fr.isen.activevibe.UserProfile
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.*
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.material3.ExperimentalMaterial3Api
+
 
 
 @Composable
@@ -34,9 +46,20 @@ fun EditProfilScreen(
     saveProfile: (UserProfile) -> Unit,
     onBackClick: () -> Unit
 ) {
+    var isEditing by remember { mutableStateOf(false) } // Mode édition activé/désactivé
+
+    val userId = FirebaseAuth.getInstance().currentUser?.uid
+    val database: DatabaseReference = FirebaseDatabase.getInstance().getReference("users")
+
+    // 🔹 Récupérer le nom et prénom depuis Firebase Firestore
+
+    // 🔹 Déclaration des variables d'état pour l'UI
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
-    var name by remember { mutableStateOf(userProfile.nom) }
-    var userEmail by remember { mutableStateOf(userProfile.email) }
+    var nomUtilisateur by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    var surname by remember { mutableStateOf("") }
+    val user = FirebaseAuth.getInstance().currentUser
+    var userEmail by remember { mutableStateOf(user?.email ?: "Email non disponible") }
     var age by remember { mutableStateOf(userProfile.age) }
     var gender by remember { mutableStateOf(userProfile.gender) }
     var nationality by remember { mutableStateOf(userProfile.nationality) }
@@ -46,11 +69,31 @@ fun EditProfilScreen(
     var level by remember { mutableStateOf(userProfile.level) }
     var team by remember { mutableStateOf(userProfile.team) }
 
-    var isEditing by remember { mutableStateOf(false) } // Mode édition activé/désactivé
+// 🔹 Récupérer les données depuis Firebase et mettre à jour l'UI
+    LaunchedEffect(userId) {
+        if (userId != null) {
+            database.child(userId).get().addOnSuccessListener { snapshot ->
+                if (snapshot.exists()) {
+                    nomUtilisateur = snapshot.child("nomUtilisateur").getValue(String::class.java) ?: "Non trouvé"
+                    name = snapshot.child("nom").getValue(String::class.java) ?: name
+                    surname = snapshot.child("prenom").getValue(String::class.java) ?: surname
+                    userEmail = snapshot.child("email").getValue(String::class.java) ?: userEmail
+                    age = snapshot.child("age").getValue(String::class.java) ?: age
+                    gender = snapshot.child("gender").getValue(String::class.java) ?: gender
+                    nationality = snapshot.child("nationality").getValue(String::class.java) ?: nationality
+                    height = snapshot.child("height").getValue(String::class.java) ?: height
+                    weight = snapshot.child("weight").getValue(String::class.java) ?: weight
+                    sport = snapshot.child("sport").getValue(String::class.java) ?: sport
+                    level = snapshot.child("level").getValue(String::class.java) ?: level
+                    team = snapshot.child("team").getValue(String::class.java) ?: team
+                }
+            }.addOnFailureListener {
+                println("Erreur lors de la récupération des données Firebase")
+            }
+        }
+    }
 
-    val genderOptions = listOf("Homme", "Femme")
-    val levelOptions = listOf("Débutant", "Intermédiaire", "Avancé")
-    val sportOptions = listOf("Natation", "Course à pied", "Vélo")
+
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -65,23 +108,51 @@ fun EditProfilScreen(
     }
 
     val saveUserProfile = {
-        val updatedUser = UserProfile(
-            profileImageUri = profileImageUri?.toString() ?: "",
-            nomUtilisateur = userProfile.nomUtilisateur,
-            nom = name,
-            email = userEmail,
-            age = age,
-            gender = gender,
-            nationality = nationality,
-            height = height,
-            weight = weight,
-            sport = sport,
-            level = level,
-            team = team
-        )
-        saveProfile(updatedUser) // Sauvegarde du profil
-        onBackClick() // Retour au profil après sauvegarde
+        if (userId != null) {
+            val updates = mutableMapOf<String, Any?>()
+
+            // 🔹 Ajoute uniquement les champs non vides pour éviter d'écraser les valeurs existantes
+            if (name.isNotEmpty()) updates["nom"] = name
+            if (surname.isNotEmpty()) updates["prenom"] = surname
+            if (age.isNotEmpty()) updates["age"] = age
+            if (gender.isNotEmpty()) updates["gender"] = gender
+            if (nationality.isNotEmpty()) updates["nationality"] = nationality
+            if (height.isNotEmpty()) updates["height"] = height
+            if (weight.isNotEmpty()) updates["weight"] = weight
+            if (sport.isNotEmpty()) updates["sport"] = sport
+            if (level.isNotEmpty()) updates["level"] = level
+            if (team.isNotEmpty()) updates["team"] = team
+
+            // 🔹 Mise à jour partielle dans Firebase
+            database.child(userId).updateChildren(updates)
+                .addOnSuccessListener {
+                    // ✅ Succès : Recharger immédiatement les nouvelles données depuis Firebase
+                    database.child(userId).get().addOnSuccessListener { snapshot ->
+                        if (snapshot.exists()) {
+                            name = snapshot.child("nom").getValue(String::class.java) ?: name
+                            surname = snapshot.child("prenom").getValue(String::class.java) ?: surname
+                            userEmail = snapshot.child("email").getValue(String::class.java) ?: userEmail
+                            age = snapshot.child("age").getValue(String::class.java) ?: age
+                            gender = snapshot.child("gender").getValue(String::class.java) ?: gender
+                            nationality = snapshot.child("nationality").getValue(String::class.java) ?: nationality
+                            height = snapshot.child("height").getValue(String::class.java) ?: height
+                            weight = snapshot.child("weight").getValue(String::class.java) ?: weight
+                            sport = snapshot.child("sport").getValue(String::class.java) ?: sport
+                            level = snapshot.child("level").getValue(String::class.java) ?: level
+                            team = snapshot.child("team").getValue(String::class.java) ?: team
+                        }
+                    }
+
+                    // 🔹 Retour automatique après mise à jour
+                    onBackClick()
+                }
+                .addOnFailureListener {
+                    println("Erreur lors de la mise à jour du profil dans Firebase")
+                }
+        }
     }
+
+
 
     Column(
         modifier = Modifier
@@ -144,11 +215,19 @@ fun EditProfilScreen(
         )
 
         OutlinedTextField(
+            value = surname,
+            onValueChange = { surname = it },
+            label = { Text("Prénom") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = isEditing
+        )
+
+        OutlinedTextField(
             value = userEmail,
             onValueChange = { userEmail = it },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth(),
-            enabled = isEditing
+            enabled = false
         )
 
         OutlinedTextField(
@@ -161,7 +240,7 @@ fun EditProfilScreen(
 
         DropdownField(
             label = "Sexe",
-            options = genderOptions,
+            options = listOf("Homme", "Femme"),
             selectedOption = gender,
             onOptionSelected = { gender = it },
             enabled = isEditing
@@ -198,7 +277,7 @@ fun EditProfilScreen(
 
         DropdownField(
             label = "Sport pratiqué",
-            options = sportOptions,
+            options = listOf("Natation", "Course à pied", "Vélo"),
             selectedOption = sport,
             onOptionSelected = { sport = it },
             enabled = isEditing
@@ -206,7 +285,7 @@ fun EditProfilScreen(
 
         DropdownField(
             label = "Niveau",
-            options = levelOptions,
+            options = listOf("Débutant", "Intermédiaire", "Avancé"),
             selectedOption = level,
             onOptionSelected = { level = it },
             enabled = isEditing
@@ -233,6 +312,7 @@ fun EditProfilScreen(
 }
 
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DropdownField(
@@ -252,6 +332,7 @@ fun DropdownField(
             modifier = Modifier.menuAnchor().fillMaxWidth(),
             readOnly = true,
             enabled = enabled // Le champ est activé uniquement en mode édition
+
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->
@@ -264,4 +345,20 @@ fun DropdownField(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomOutlinedTextField(
+    label: String,
+    selectedOption: String,
+    enabled: Boolean
+) {
+    OutlinedTextField(
+        value = selectedOption,
+        onValueChange = {},
+        label = { Text(text = label, color = Color(0xFF433AF1)) },
+        modifier = Modifier.fillMaxWidth(), // Si menuAnchor() pose problème, on peut l'enlever
+        readOnly = true,
+        enabled = enabled,
+    )
+}
 

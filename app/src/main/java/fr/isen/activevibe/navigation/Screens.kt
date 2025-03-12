@@ -19,6 +19,7 @@ fun HomeScreen() {
 @Composable
 fun SearchScreen() {
     RechercheScreen()
+
 }
 
 @Composable

@@ -2,6 +2,7 @@ package fr.isen.activevibe.recherche
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -89,6 +90,22 @@ fun RechercheScreen() {
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(45.dp) // Taille du cercle
+                                        .padding(end = 12.dp) // Espacement avec le texte
+                                        .border(1.dp, Color.LightGray, CircleShape) // Bordure noire fine
+                                        .clip(CircleShape) // Pour arrondir l'image dans un cercle
+                                ) {
+                                    // Image PNG à l'intérieur du cercle
+                                    Image(
+                                        painter = painterResource(id = R.drawable.profile), // Remplacez ic_profile par le nom de votre image
+                                        contentDescription = "Avatar",
+                                        modifier = Modifier.fillMaxSize(),
+                                        //contentScale = ContentScale.Crop // Coupe l'image pour qu'elle remplisse le cercle
+                                    )
+                                }
                                 // Texte à gauche
                                 Text(
                                     text = user,

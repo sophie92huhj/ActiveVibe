@@ -81,7 +81,7 @@ fun PublicationCard(publication: Publication) {
     val userLikesRef = FirebaseDatabase.getInstance().getReference("users").child(userId).child("likes")
     val commentsRef = FirebaseDatabase.getInstance().getReference("publications").child(publication.id).child("comments")
     var profileImageUrl by remember { mutableStateOf<String?>(null) }
-   // var profileImageUrl by remember { mutableStateOf<String?>(null) }
+    // var profileImageUrl by remember { mutableStateOf<String?>(null) }
 
     var isLiked by remember { mutableStateOf(false) }
     var showCommentInput by remember { mutableStateOf(false) }
@@ -103,7 +103,7 @@ fun PublicationCard(publication: Publication) {
                 val fetchedComments = mutableListOf<Pair<String, String>>()
                 for (child in snapshot.children) {
                     val username = child.child("nomUtilisateur").getValue(String::class.java) ?: "Utilisateur inconnu"
-                 
+
                     val message = child.child("message").getValue(String::class.java) ?: ""
                     fetchedComments.add(username to message)
                 }

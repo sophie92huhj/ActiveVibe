@@ -55,20 +55,20 @@ fun RechercheScreen() {
     if (selectedUser == null) {
         Scaffold(
             topBar = {
-                // Barre de recherche fixe en haut
+
                 OutlinedTextField(
                     value = searchText,
                     onValueChange = { searchText = it },
                     label = { Text("Rechercher un utilisateur...") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp), // Espacement autour de la barre
+                        .padding(16.dp),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp)
                 )
             },
             content = { paddingValues ->
-                // Liste des utilisateurs qui peut défiler
+
                 Column(
                     modifier = Modifier
                         .padding(paddingValues)
@@ -79,11 +79,11 @@ fun RechercheScreen() {
                             onClick = { selectedUser = user },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 8.dp) // Espacement vertical plus important entre les boutons
-                                .height(48.dp), // Hauteur des boutons un peu plus grande
-                            shape = RoundedCornerShape(16.dp), // Coins arrondis pour les boutons
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFECECEC)), // Couleur de fond plus douce
-                            elevation = ButtonDefaults.elevatedButtonElevation(4.dp) // Légère élévation pour un effet de profondeur
+                                .padding(vertical = 8.dp)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFECECEC)),
+                            elevation = ButtonDefaults.elevatedButtonElevation(4.dp)
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -93,20 +93,20 @@ fun RechercheScreen() {
 
                                 Box(
                                     modifier = Modifier
-                                        .size(45.dp) // Taille du cercle
-                                        .padding(end = 12.dp) // Espacement avec le texte
-                                        .border(1.dp, Color.LightGray, CircleShape) // Bordure noire fine
-                                        .clip(CircleShape) // Pour arrondir l'image dans un cercle
+                                        .size(45.dp)
+                                        .padding(end = 12.dp)
+                                        .border(1.dp, Color.LightGray, CircleShape)
+                                        .clip(CircleShape)
                                 ) {
-                                    // Image PNG à l'intérieur du cercle
+                                    // Image à l'intérieur du cercle
                                     Image(
-                                        painter = painterResource(id = R.drawable.profile), // Remplacez ic_profile par le nom de votre image
+                                        painter = painterResource(id = R.drawable.profile),
                                         contentDescription = "Avatar",
                                         modifier = Modifier.fillMaxSize(),
-                                        //contentScale = ContentScale.Crop // Coupe l'image pour qu'elle remplisse le cercle
+
                                     )
                                 }
-                                // Texte à gauche
+
                                 Text(
                                     text = user,
                                     color = Color.Black,
@@ -115,11 +115,11 @@ fun RechercheScreen() {
                                     textAlign = TextAlign.Start
                                 )
 
-                                // Icône à droite
+
                                 Icon(
                                     imageVector = Icons.Default.ArrowForward,
                                     contentDescription = "Flèche",
-                                    tint = Color.Blue, // Icône plus discrète
+                                    tint = Color.Blue,
                                     modifier = Modifier.padding(start = 8.dp)
                                 )
                             }
@@ -186,7 +186,7 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
             Spacer(modifier = Modifier.width(10.dp))
             Column {
                 Text(text = userProfile.nomUtilisateur, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                //Text(text = userProfile.nom, fontSize = 14.sp, color = Color.Gray)
+
             }
         }
 
@@ -194,15 +194,10 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
 
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(text = "À propos de moi", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            /*Text(
-                text = "Ajouter une biographie",
-                fontSize = 14.sp,
-                color = Color.Gray
-            )*/
+
         }
         Spacer(modifier = Modifier.height(15.dp))
 
-        // 🔹 Statistiques du profil
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceAround
@@ -214,7 +209,6 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 🔹 Grille minimaliste (3x3)
         GridPlaceholder()
     }
     }

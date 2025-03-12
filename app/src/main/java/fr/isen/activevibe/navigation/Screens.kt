@@ -32,8 +32,8 @@ fun LikedPostsScreen(navController: NavController) {
 }
 
 @Composable
-fun ProfileScreen1() {
-   ProfileScreen()
+fun ProfileScreen1(onEditClick: () -> Unit) {
+    ProfileScreen(onEditClick = onEditClick)
 }
 
 @Composable

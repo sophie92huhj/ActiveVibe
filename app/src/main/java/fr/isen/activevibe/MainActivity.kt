@@ -14,7 +14,7 @@ import fr.isen.activevibe.navigation.TopBar
 import fr.isen.activevibe.navigation.* // ✅ Importation de toutes les fonctions de `Screens.kt`
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.ui.graphics.Color
-
+import fr.isen.activevibe.profil.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,39 +24,49 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             var selectedItem by remember { mutableStateOf(0) }
             var isDarkMode by remember { mutableStateOf(false) }
+            var showEditProfile by remember { mutableStateOf(false) } // ✅ Ajouté ici !
 
             val currentUser = FirebaseAuth.getInstance().currentUser
             val userId = currentUser?.uid ?: "" // ✅ Récupère l'UID de l'utilisateur connecté
 
             MaterialTheme(
                 colorScheme = if (isDarkMode) darkColorScheme() else lightColorScheme().copy(
-                    background = Color.White,  // ✅ Force le fond en blanc
-                    surface = Color.White // ✅ Évite le beige sur certains composants
+                    background = Color.White,
+                    surface = Color.White
                 )
-            )
-                {
-                Scaffold(
-                    topBar = { TopBar(selectedItem, onItemSelected = { selectedItem = it }) },
-                    bottomBar = { BottomNavigationBar(selectedItem, onItemSelected = { selectedItem = it }) },
-                    floatingActionButton = {
-                        FloatingActionButton(onClick = { isDarkMode = !isDarkMode }) {
-                            Text(if (isDarkMode) "🌙" else "🌞")
+            ) {
+                if (showEditProfile) {
+                    EditProfilScreen(
+                        userProfile = UserProfile(), // Remplace par les données actuelles
+                        saveProfile = { updatedProfile ->
+                            showEditProfile = false // ✅ Retour au profil après mise à jour
+                        },
+                        onBackClick = { showEditProfile = false } // ✅ Bouton retour
+                    )
+                } else {
+                    Scaffold(
+                        topBar = { TopBar(selectedItem, onItemSelected = { selectedItem = it }) },
+                        bottomBar = { BottomNavigationBar(selectedItem, onItemSelected = { selectedItem = it }) },
+                        floatingActionButton = {
+                            FloatingActionButton(onClick = { isDarkMode = !isDarkMode }) {
+                                Text(if (isDarkMode) "🌙" else "🌞")
+                            }
                         }
-                    }
-                ) { innerPadding ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        when (selectedItem) {
-                            0 -> HomeScreen()  // ✅ Toutes les fonctions sont bien appelées
-                            1 -> SearchScreen()
-                            2 -> AddPostScreen()
-                            3 -> LikedPostsScreen(navController)
-                            4 -> ProfileScreen1()
-                            5 -> MessagesScreen()
+                    ) { innerPadding ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            when (selectedItem) {
+                                0 -> HomeScreen()
+                                1 -> SearchScreen()
+                                2 -> AddPostScreen()
+                                3 -> LikedPostsScreen(navController)
+                                4 -> ProfileScreen1(onEditClick = { showEditProfile = true }) // ✅ Correction ici
+                                5 -> MessagesScreen()
+                            }
                         }
                     }
                 }

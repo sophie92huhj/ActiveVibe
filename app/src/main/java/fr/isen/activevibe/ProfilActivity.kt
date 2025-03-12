@@ -61,10 +61,7 @@ class ProfilActivity : ComponentActivity() {
                     )
                 } else {
                     // App prend en paramètre `onEditClick` pour modifier `showEditProfile`
-                    App(
-                        onEditClick = { showEditProfile.value = true },
-                        userProfile = userProfile.value
-                    )
+                    App()
                 }
             }
         }

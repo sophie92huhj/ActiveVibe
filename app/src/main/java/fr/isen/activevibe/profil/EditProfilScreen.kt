@@ -27,9 +27,9 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.DropdownMenuItem
 import fr.isen.activevibe.UserProfile
 
+
 @Composable
 fun EditProfilScreen(
-    modifier: Modifier = Modifier,
     userProfile: UserProfile,
     saveProfile: (UserProfile) -> Unit,
     onBackClick: () -> Unit
@@ -46,13 +46,11 @@ fun EditProfilScreen(
     var level by remember { mutableStateOf(userProfile.level) }
     var team by remember { mutableStateOf(userProfile.team) }
 
-    // Etat global pour savoir si on est en mode édition ou non
-    //etat
-    var isEditing by remember { mutableStateOf(false) }
+    var isEditing by remember { mutableStateOf(false) } // Mode édition activé/désactivé
 
     val genderOptions = listOf("Homme", "Femme")
     val levelOptions = listOf("Débutant", "Intermédiaire", "Avancé")
-    val sportOptions = listOf("Natation", "Course à pieds", "Vélo")
+    val sportOptions = listOf("Natation", "Course à pied", "Vélo")
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -68,34 +66,43 @@ fun EditProfilScreen(
 
     val saveUserProfile = {
         val updatedUser = UserProfile(
-            name, userEmail, age, gender, nationality,
-            height, weight, sport, level, team
+            profileImageUri = profileImageUri?.toString() ?: "",
+            nomUtilisateur = userProfile.nomUtilisateur,
+            nom = name,
+            email = userEmail,
+            age = age,
+            gender = gender,
+            nationality = nationality,
+            height = height,
+            weight = weight,
+            sport = sport,
+            level = level,
+            team = team
         )
-        Log.d("Firebase", "Enregistrement du profil: $updatedUser")
-        saveProfile(updatedUser)
+        saveProfile(updatedUser) // Sauvegarde du profil
+        onBackClick() // Retour au profil après sauvegarde
     }
 
-
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Bouton retour
+        // 🔹 Bouton retour
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { onBackClick() }) {
+            IconButton(onClick = onBackClick) {
                 Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Retour")
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Photo de profil
+        // 🔹 Photo de profil
         Box(
             modifier = Modifier
                 .size(120.dp)
@@ -115,7 +122,7 @@ fun EditProfilScreen(
             }
         }
 
-        // Ligne avec le bouton crayon aligné à droite
+        // 🔹 Bouton pour activer l'édition
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
@@ -127,119 +134,95 @@ fun EditProfilScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // 🔹 Champs de saisie des informations personnelles
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Nom") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = isEditing
+        )
 
-        // Nom
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Nom") },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = isEditing // Si en mode édition, le champ est modifiable
-            )
-        }
+        OutlinedTextField(
+            value = userEmail,
+            onValueChange = { userEmail = it },
+            label = { Text("Email") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = isEditing
+        )
 
-        // Email
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = userEmail,
-                onValueChange = { userEmail = it },
-                label = { Text("Email") },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = isEditing // Si en mode édition, le champ est modifiable
-            )
-        }
+        OutlinedTextField(
+            value = age,
+            onValueChange = { age = it },
+            label = { Text("Âge") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = isEditing
+        )
 
-        // Âge
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = age,
-                onValueChange = { age = it },
-                label = { Text("Âge") },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = isEditing // Si en mode édition, le champ est modifiable
-            )
-        }
-
-        // Sexe
         DropdownField(
             label = "Sexe",
             options = genderOptions,
             selectedOption = gender,
             onOptionSelected = { gender = it },
-            enabled = isEditing // Si en mode édition, le champ est modifiable
+            enabled = isEditing
         )
 
-        // Nationalité
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = nationality,
-                onValueChange = { nationality = it },
-                label = { Text("Nationalité") },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = isEditing // Si en mode édition, le champ est modifiable
-            )
-        }
+        OutlinedTextField(
+            value = nationality,
+            onValueChange = { nationality = it },
+            label = { Text("Nationalité") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = isEditing
+        )
 
-        // Taille
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = height,
-                onValueChange = { height = it },
-                label = { Text("Taille (cm)") },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = isEditing // Si en mode édition, le champ est modifiable
-            )
-        }
+        OutlinedTextField(
+            value = height,
+            onValueChange = { height = it },
+            label = { Text("Taille (cm)") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = isEditing
+        )
 
-        // Poids
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = weight,
-                onValueChange = { weight = it },
-                label = { Text("Poids (kg)") },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = isEditing // Si en mode édition, le champ est modifiable
-            )
-        }
+        OutlinedTextField(
+            value = weight,
+            onValueChange = { weight = it },
+            label = { Text("Poids (kg)") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = isEditing
+        )
 
-        // IMC
+        // 🔹 Affichage de l'IMC calculé
         if (bmi != null) {
             Text("IMC : %.2f".format(bmi), style = MaterialTheme.typography.bodyMedium)
         }
 
-        // Sport
         DropdownField(
             label = "Sport pratiqué",
             options = sportOptions,
             selectedOption = sport,
             onOptionSelected = { sport = it },
-            enabled = isEditing // Si en mode édition, le champ est modifiable
+            enabled = isEditing
         )
 
-        // Niveau
         DropdownField(
             label = "Niveau",
             options = levelOptions,
             selectedOption = level,
             onOptionSelected = { level = it },
-            enabled = isEditing // Si en mode édition, le champ est modifiable
+            enabled = isEditing
         )
 
-        // Club / Équipe actuelle
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = team,
-                onValueChange = { team = it },
-                label = { Text("Club / Équipe actuelle") },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = isEditing // Si en mode édition, le champ est modifiable
-            )
-        }
+        OutlinedTextField(
+            value = team,
+            onValueChange = { team = it },
+            label = { Text("Club / Équipe actuelle") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = isEditing
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Bouton Enregistrer
+        // 🔹 Bouton Enregistrer
         Button(
             onClick = { saveUserProfile() },
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF433AF1))
@@ -248,6 +231,7 @@ fun EditProfilScreen(
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

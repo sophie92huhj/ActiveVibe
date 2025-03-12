@@ -3,10 +3,12 @@ package fr.isen.activevibe
 //import androidx.room.Entity
 //import androidx.room.PrimaryKey
 
+
 //@Entity(tableName = "user_profile")
 
 data class UserProfile(
     //@PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val profileImageUri: String = "",
     val nomUtilisateur: String = "",
     val nom: String = "",
     val email: String = "",
@@ -21,5 +23,5 @@ data class UserProfile(
     val team: String = "",
     //val achievements: String = ""
 ) {
-    constructor() : this("", "", "", "", "", "", "", "", "", "")
+    constructor() : this("", "", "", "", "", "", "", "", "", "", "", "")
 }

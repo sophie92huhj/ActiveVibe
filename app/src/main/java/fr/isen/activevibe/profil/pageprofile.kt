@@ -23,49 +23,28 @@ import fr.isen.activevibe.R
 import fr.isen.activevibe.UserProfile
 
 @Composable
-fun App(onEditClick: () -> Unit, userProfile: UserProfile) {
-    // Utilisation de `remember` et `mutableStateOf` pour garder un état mutable
+fun App() {
     var showEditProfile by remember { mutableStateOf(false) }
-    var nomUtilisateur by remember { mutableStateOf("") }  // Nom d'utilisateur mutable
+    var userProfile by remember { mutableStateOf(UserProfile()) }
 
-    // Récupérer l'ID de l'utilisateur actuel
-    val userId = FirebaseAuth.getInstance().currentUser?.uid
-
-    LaunchedEffect(userId) {
-        if (userId != null) {
-            // Récupérer le nomUtilisateur depuis Firestore
-            val db = FirebaseFirestore.getInstance()
-            db.collection("users")
-                .document(userId)
-                .get()
-                .addOnSuccessListener { document ->
-                    if (document != null) {
-                        nomUtilisateur = document.getString("nomUtilisateur") ?: "Nom non disponible"
-                    }
-                }
-        }
-    }
-
-    // Si showEditProfile est vrai, affiche l'écran d'édition
     if (showEditProfile) {
         EditProfilScreen(
             userProfile = userProfile,
             saveProfile = { updatedProfile ->
-                // Mettre à jour les informations si nécessaire
-                showEditProfile = false
+                userProfile = updatedProfile // ✅ Met à jour les données utilisateur
+                showEditProfile = false // ✅ Retour à `ProfileScreen`
             },
-            onBackClick = { showEditProfile = false }
+            onBackClick = { showEditProfile = false } // ✅ Retour sans mise à jour
         )
     } else {
-        ProfileScreen()
-
+        ProfileScreen(onEditClick = { showEditProfile = true })
     }
 }
 
+
 @Composable
-fun ProfileScreen() {
-    var showEditProfile by remember { mutableStateOf(false) }
-    var userProfile by remember { mutableStateOf(UserProfile()) }  // ✅ Déclaration initiale
+fun ProfileScreen(onEditClick: () -> Unit) {
+    var userProfile by remember { mutableStateOf(UserProfile()) }  // ✅ Stockage du profil utilisateur
     var nomUtilisateur by remember { mutableStateOf("Chargement...") }
 
     val userId = FirebaseAuth.getInstance().currentUser?.uid
@@ -96,7 +75,7 @@ fun ProfileScreen() {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // ✅ Ajout d'un `Row` pour aligner la photo et le nom d'utilisateur (comme Instagram)
+        // ✅ Alignement de la photo et du nom d'utilisateur (comme Instagram)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
@@ -141,7 +120,7 @@ fun ProfileScreen() {
 
         // 🔹 Bouton d'édition du profil
         Button(
-            onClick = { showEditProfile = true }, // ✅ Afficher l'écran d'édition
+            onClick = onEditClick, // ✅ Utilisation de `onEditClick` pour afficher `EditProfilScreen`
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFFE0E0E0),
                 contentColor = Color(0xFF424242)

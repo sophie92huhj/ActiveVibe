@@ -37,6 +37,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.material3.ExperimentalMaterial3Api
+import fr.isen.activevibe.API.ImgurUploader
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 
 
@@ -50,11 +54,12 @@ fun EditProfilScreen(
 
     val userId = FirebaseAuth.getInstance().currentUser?.uid
     val database: DatabaseReference = FirebaseDatabase.getInstance().getReference("users")
-
+    val context = LocalContext.current // ✅ Récupérer le contexte ici
     // 🔹 Récupérer le nom et prénom depuis Firebase Firestore
 
-    // 🔹 Déclaration des variables d'état pour l'UI
+    // 🔹 Déclaration des variables d'état pour l'UIv
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
+    var profileImageUrl by remember { mutableStateOf<String?>(null) }
     var nomUtilisateur by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var surname by remember { mutableStateOf("") }
@@ -86,6 +91,8 @@ fun EditProfilScreen(
                     sport = snapshot.child("sport").getValue(String::class.java) ?: sport
                     level = snapshot.child("level").getValue(String::class.java) ?: level
                     team = snapshot.child("team").getValue(String::class.java) ?: team
+
+                    profileImageUrl = snapshot.child("profileImageUrl").getValue(String::class.java)
                 }
             }.addOnFailureListener {
                 println("Erreur lors de la récupération des données Firebase")
@@ -108,10 +115,11 @@ fun EditProfilScreen(
     }
 
     val saveUserProfile = {
+
+
         if (userId != null) {
             val updates = mutableMapOf<String, Any?>()
 
-            // 🔹 Ajoute uniquement les champs non vides pour éviter d'écraser les valeurs existantes
             if (name.isNotEmpty()) updates["nom"] = name
             if (surname.isNotEmpty()) updates["prenom"] = surname
             if (age.isNotEmpty()) updates["age"] = age
@@ -123,36 +131,61 @@ fun EditProfilScreen(
             if (level.isNotEmpty()) updates["level"] = level
             if (team.isNotEmpty()) updates["team"] = team
 
-            // 🔹 Mise à jour partielle dans Firebase
-            database.child(userId).updateChildren(updates)
-                .addOnSuccessListener {
-                    // ✅ Succès : Recharger immédiatement les nouvelles données depuis Firebase
-                    database.child(userId).get().addOnSuccessListener { snapshot ->
-                        if (snapshot.exists()) {
-                            name = snapshot.child("nom").getValue(String::class.java) ?: name
-                            surname = snapshot.child("prenom").getValue(String::class.java) ?: surname
-                            userEmail = snapshot.child("email").getValue(String::class.java) ?: userEmail
-                            age = snapshot.child("age").getValue(String::class.java) ?: age
-                            gender = snapshot.child("gender").getValue(String::class.java) ?: gender
-                            nationality = snapshot.child("nationality").getValue(String::class.java) ?: nationality
-                            height = snapshot.child("height").getValue(String::class.java) ?: height
-                            weight = snapshot.child("weight").getValue(String::class.java) ?: weight
-                            sport = snapshot.child("sport").getValue(String::class.java) ?: sport
-                            level = snapshot.child("level").getValue(String::class.java) ?: level
-                            team = snapshot.child("team").getValue(String::class.java) ?: team
-                        }
-                    }
+            profileImageUri?.let { uri ->
+                ImgurUploader.uploadToImgur(context, uri, { imageUrl ->
+                    updates["profileImageUrl"] = imageUrl
 
-                    // 🔹 Retour automatique après mise à jour
-                    onBackClick()
+                    database.child(userId).updateChildren(updates)
+                        .addOnSuccessListener {
+                            database.child(userId).get().addOnSuccessListener { snapshot ->
+                                if (snapshot.exists()) {
+                                    name = snapshot.child("nom").getValue(String::class.java) ?: name
+                                    surname = snapshot.child("prenom").getValue(String::class.java) ?: surname
+                                    userEmail = snapshot.child("email").getValue(String::class.java) ?: userEmail
+                                    age = snapshot.child("age").getValue(String::class.java) ?: age
+                                    gender = snapshot.child("gender").getValue(String::class.java) ?: gender
+                                    nationality = snapshot.child("nationality").getValue(String::class.java) ?: nationality
+                                    height = snapshot.child("height").getValue(String::class.java) ?: height
+                                    weight = snapshot.child("weight").getValue(String::class.java) ?: weight
+                                    sport = snapshot.child("sport").getValue(String::class.java) ?: sport
+                                    level = snapshot.child("level").getValue(String::class.java) ?: level
+                                    team = snapshot.child("team").getValue(String::class.java) ?: team
+                                }
+                            }
+                            onBackClick()
+                        }
+                        .addOnFailureListener {
+                            println("Erreur lors de la mise à jour du profil dans Firebase")
+                        }
+                }) {
+                    Toast.makeText(context, "Erreur lors de l'upload de l'image sur Imgur", Toast.LENGTH_SHORT).show()
                 }
-                .addOnFailureListener {
-                    println("Erreur lors de la mise à jour du profil dans Firebase")
-                }
+            } ?: run {
+                database.child(userId).updateChildren(updates)
+                    .addOnSuccessListener {
+                        database.child(userId).get().addOnSuccessListener { snapshot ->
+                            if (snapshot.exists()) {
+                                name = snapshot.child("nom").getValue(String::class.java) ?: name
+                                surname = snapshot.child("prenom").getValue(String::class.java) ?: surname
+                                userEmail = snapshot.child("email").getValue(String::class.java) ?: userEmail
+                                age = snapshot.child("age").getValue(String::class.java) ?: age
+                                gender = snapshot.child("gender").getValue(String::class.java) ?: gender
+                                nationality = snapshot.child("nationality").getValue(String::class.java) ?: nationality
+                                height = snapshot.child("height").getValue(String::class.java) ?: height
+                                weight = snapshot.child("weight").getValue(String::class.java) ?: weight
+                                sport = snapshot.child("sport").getValue(String::class.java) ?: sport
+                                level = snapshot.child("level").getValue(String::class.java) ?: level
+                                team = snapshot.child("team").getValue(String::class.java) ?: team
+                            }
+                        }
+                        onBackClick()
+                    }
+                    .addOnFailureListener {
+                        println("Erreur lors de la mise à jour du profil dans Firebase")
+                    }
+            }
         }
     }
-
-
 
     Column(
         modifier = Modifier
@@ -181,15 +214,26 @@ fun EditProfilScreen(
                 .clickable { imagePickerLauncher.launch("image/*") },
             contentAlignment = Alignment.Center
         ) {
-            if (profileImageUri != null) {
-                Image(
-                    painter = rememberAsyncImagePainter(profileImageUri),
-                    contentDescription = "Photo de profil",
-                    modifier = Modifier.size(120.dp),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Text("photo", color = Color.White)
+            when {
+                profileImageUri != null -> { // ✅ Une image locale a été sélectionnée
+                    Image(
+                        painter = rememberAsyncImagePainter(profileImageUri),
+                        contentDescription = "Nouvelle photo de profil",
+                        modifier = Modifier.size(120.dp),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                !profileImageUrl.isNullOrEmpty() -> { // ✅ Une image existe déjà dans Firebase
+                    Image(
+                        painter = rememberAsyncImagePainter(profileImageUrl),
+                        contentDescription = "Photo de profil",
+                        modifier = Modifier.size(120.dp),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                else -> { // ❌ Aucune image, afficher du texte par défaut
+                    Text("photo", color = Color.White)
+                }
             }
         }
 
@@ -360,5 +404,18 @@ fun CustomOutlinedTextField(
         readOnly = true,
         enabled = enabled,
     )
+}
+
+fun saveProfileToDatabase(userId: String, imageUrl: String?, database: DatabaseReference, context: Context) {
+    val updates = mutableMapOf<String, Any?>()
+    updates["profileImageUrl"] = imageUrl
+
+    database.child(userId).updateChildren(updates)
+        .addOnSuccessListener {
+            Toast.makeText(context, "Profil mis à jour !", Toast.LENGTH_SHORT).show()
+        }
+        .addOnFailureListener {
+            Toast.makeText(context, "Erreur lors de la mise à jour du profil", Toast.LENGTH_SHORT).show()
+        }
 }
 

@@ -35,6 +35,7 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import fr.isen.activevibe.API.ImgurUploader
 import androidx.compose.ui.res.painterResource
+import com.google.firebase.auth.FirebaseAuth
 import fr.isen.activevibe.Publication
 import fr.isen.activevibe.R
 
@@ -171,27 +172,43 @@ fun savePublicationToDatabase(
     duration: String?,
     distance: String?,
     speed: String?,
-    imageUrl: String?,  // Changement ici : stocker l'URL Imgur
+    imageUrl: String?,
     context: Context,
     database: DatabaseReference
 ) {
-    val newPublication = database.push()
-    val publication = Publication(
-        id = newPublication.key ?: "",
-        sportType = sportType,
-        description = description,
-        duration = duration.takeIf { it?.isNotEmpty() == true },
-        distance = distance.takeIf { it?.isNotEmpty() == true },
-        speed = speed.takeIf { it?.isNotEmpty() == true },
-        imageUrl = imageUrl,  // Stocker l'URL Imgur
-        timestamp = System.currentTimeMillis()
-    )
+    val userId = FirebaseAuth.getInstance().currentUser?.uid
 
-    newPublication.setValue(publication)
-        .addOnSuccessListener {
-            Toast.makeText(context, "Publication enregistrée !", Toast.LENGTH_SHORT).show()
+    if (userId != null) {
+        val usersRef = FirebaseDatabase.getInstance().getReference("users").child(userId)
+
+        // 🔹 Récupérer `nomUtilisateur` depuis la base de données avant de publier
+        usersRef.child("nomUtilisateur").get().addOnSuccessListener { snapshot ->
+            val username = snapshot.value as? String ?: "Utilisateur inconnu"
+
+            val newPublication = database.push()
+            val publication = Publication(
+                id = newPublication.key ?: "",
+                sportType = sportType,
+                description = description,
+                duration = duration.takeIf { it?.isNotEmpty() == true },
+                distance = distance.takeIf { it?.isNotEmpty() == true },
+                speed = speed.takeIf { it?.isNotEmpty() == true },
+                imageUrl = imageUrl,
+                timestamp = System.currentTimeMillis(),
+                nomUtilisateur = username  // 🔥 Ajout du `nomUtilisateur`
+            )
+
+            newPublication.setValue(publication)
+                .addOnSuccessListener {
+                    Toast.makeText(context, "Publication enregistrée !", Toast.LENGTH_SHORT).show()
+                }
+                .addOnFailureListener {
+                    Toast.makeText(context, "Erreur lors de l'ajout", Toast.LENGTH_SHORT).show()
+                }
+        }.addOnFailureListener {
+            Toast.makeText(context, "Impossible de récupérer nomUtilisateur", Toast.LENGTH_SHORT).show()
         }
-        .addOnFailureListener {
-            Toast.makeText(context, "Erreur lors de l'ajout", Toast.LENGTH_SHORT).show()
-        }
+    } else {
+        Toast.makeText(context, "Utilisateur non connecté", Toast.LENGTH_SHORT).show()
+    }
 }

@@ -27,30 +27,50 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import coil.compose.rememberAsyncImagePainter
 import fr.isen.activevibe.R
 import fr.isen.activevibe.UserProfile
 import fr.isen.activevibe.profil.GridPlaceholder
 import fr.isen.activevibe.profil.ProfileStat
 
 
+data class UserItem(
+    val nomUtilisateur: String,
+    val profileImageUrl: String? // Peut être null si l'utilisateur n'a pas mis de photo
+)
+
+
 @Composable
 fun RechercheScreen() {
     var searchText by remember { mutableStateOf("") }
-    var users by remember { mutableStateOf(listOf<String>()) }
+    //var users by remember { mutableStateOf(listOf<String>()) }
     var selectedUser by remember { mutableStateOf<String?>(null) }
     val scrollState = rememberScrollState()
+    var users by remember { mutableStateOf(listOf<UserItem>()) }
+
 
     LaunchedEffect(Unit) {
         val database = FirebaseDatabase.getInstance().getReference("users")
         database.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                users = snapshot.children.mapNotNull { it.child("nomUtilisateur").getValue(String::class.java) }
+                users = snapshot.children.mapNotNull { userSnapshot ->
+                    val nomUtilisateur = userSnapshot.child("nomUtilisateur").getValue(String::class.java)
+                    //var profileImageUrl = userSnapshot.child("profileImageUrl").getValue(String::class.java)
+                    var profileImageUrl = userSnapshot.child("profileImageUrl").getValue(String::class.java) ?: ""
+
+                    if (nomUtilisateur != null) {
+                        UserItem(nomUtilisateur, profileImageUrl)
+                    } else null
+                }
             }
             override fun onCancelled(error: DatabaseError) {}
         })
     }
+
+
 
     if (selectedUser == null) {
         Scaffold(
@@ -74,9 +94,9 @@ fun RechercheScreen() {
                         .padding(paddingValues)
                         .verticalScroll(scrollState)
                 ) {
-                    users.filter { it.contains(searchText, ignoreCase = true) }.forEach { user ->
+                    users.filter { it.nomUtilisateur.contains(searchText, ignoreCase = true) }.forEach { user ->
                         Button(
-                            onClick = { selectedUser = user },
+                            onClick = { selectedUser = user.nomUtilisateur },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 8.dp)
@@ -98,17 +118,26 @@ fun RechercheScreen() {
                                         .border(1.dp, Color.LightGray, CircleShape)
                                         .clip(CircleShape)
                                 ) {
-                                    // Image à l'intérieur du cercle
-                                    Image(
-                                        painter = painterResource(id = R.drawable.profile),
-                                        contentDescription = "Avatar",
-                                        modifier = Modifier.fillMaxSize(),
-
-                                    )
+                                    if (user.profileImageUrl != null) {
+                                        Image(
+                                            painter = rememberAsyncImagePainter(user.profileImageUrl),
+                                            contentDescription = "Avatar",
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        Image(
+                                            painter = painterResource(id = R.drawable.profile),
+                                            contentDescription = "Avatar",
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
                                 }
 
+
+
                                 Text(
-                                    text = user,
+                                    text = user.nomUtilisateur,  // ✅ Affiche le nom d’utilisateur
                                     color = Color.Black,
                                     modifier = Modifier.fillMaxWidth(),
                                     style = MaterialTheme.typography.bodyMedium,
@@ -146,9 +175,18 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
             if (snapshot.exists()) {
                 val userSnapshot = snapshot.children.first()
                 userProfile = UserProfile(
+                    profileImageUri = userSnapshot.child("profileImageUrl").getValue(String::class.java) ?: "",
                     nomUtilisateur = userSnapshot.child("nomUtilisateur").getValue(String::class.java) ?: "Non trouvé",
                     nom = userSnapshot.child("nom").getValue(String::class.java) ?: "Nom inconnu",
-                    email = userSnapshot.child("email").getValue(String::class.java) ?: "Email non disponible"
+                    email = userSnapshot.child("email").getValue(String::class.java) ?: "Email non disponible",
+                    age = userSnapshot.child("age").getValue(String::class.java) ?: "",
+                    gender = userSnapshot.child("gender").getValue(String::class.java) ?: "",
+                    nationality = userSnapshot.child("nationality").getValue(String::class.java) ?: "",
+                    height = userSnapshot.child("height").getValue(String::class.java) ?: "",
+                    weight = userSnapshot.child("weight").getValue(String::class.java) ?: "",
+                    sport = userSnapshot.child("sport").getValue(String::class.java) ?: "",
+                    level = userSnapshot.child("level").getValue(String::class.java) ?: "",
+                    team = userSnapshot.child("team").getValue(String::class.java) ?: ""
                 )
             }
         }
@@ -175,13 +213,24 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
                     .clip(CircleShape)
                     .background(Color.Transparent)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.profile),
-                    contentDescription = "Photo de profil",
-                    modifier = Modifier
-                        .size(90.dp)
-                        .clip(CircleShape)
-                )
+                if (!userProfile.profileImageUri.isNullOrEmpty()) {
+                    Image(
+                        painter = rememberAsyncImagePainter(userProfile.profileImageUri),
+                        contentDescription = "Photo de profil",
+                        modifier = Modifier
+                            .size(90.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.profile), // Image par défaut si pas d'URL
+                        contentDescription = "Photo de profil",
+                        modifier = Modifier
+                            .size(90.dp)
+                            .clip(CircleShape)
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(10.dp))
             Column {

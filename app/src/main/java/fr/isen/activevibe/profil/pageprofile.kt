@@ -94,6 +94,7 @@ fun ProfileScreen(onEditClick: () -> Unit) {
             database.child(it).get().addOnSuccessListener { snapshot ->
                 if (snapshot.exists()) {
                     nomUtilisateur = snapshot.child("nomUtilisateur").getValue(String::class.java) ?: "Utilisateur inconnu"
+                    profileImageUrl = snapshot.child("profileImageUrl").getValue(String::class.java) ?: "" // ✅ Récupération de l'image
                 } else {
                     nomUtilisateur = "Utilisateur introuvable"
                 }

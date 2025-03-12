@@ -52,44 +52,65 @@ fun RechercheScreen() {
     }
 
     if (selectedUser == null) {
-        Column(
-            modifier = Modifier.padding(16.dp).verticalScroll(scrollState)
-        ) {
-            OutlinedTextField(
-                value = searchText,
-                onValueChange = { searchText = it },
-                label = { Text("Rechercher un utilisateur...") },
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                singleLine = true
-            )
-            users.filter { it.contains(searchText, ignoreCase = true) }.forEach { user ->
-                Button(
-                    onClick = { selectedUser = user },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray),
-                    shape = RoundedCornerShape(0.dp) // Coins carrés
+        Scaffold(
+            topBar = {
+                // Barre de recherche fixe en haut
+                OutlinedTextField(
+                    value = searchText,
+                    onValueChange = { searchText = it },
+                    label = { Text("Rechercher un utilisateur...") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp), // Espacement autour de la barre
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+            },
+            content = { paddingValues ->
+                // Liste des utilisateurs qui peut défiler
+                Column(
+                    modifier = Modifier
+                        .padding(paddingValues)
+                        .verticalScroll(scrollState)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween // Aligne l'icône à droite et le texte à gauche
-                    ) {
-                        Text(
-                            user,
-                            color = Color.Black,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Start // Texte aligné à gauche
-                        )
-                        Icon(
-                            imageVector = Icons.Default.ArrowForward, // Icône flèche à droite
-                            contentDescription = "Flèche",
-                            tint = Color.Red, // Change la couleur de l'icône en rouge
-                            modifier = Modifier.padding(start = 8.dp) // Espacement entre le texte et la flèche
-                        )
+                    users.filter { it.contains(searchText, ignoreCase = true) }.forEach { user ->
+                        Button(
+                            onClick = { selectedUser = user },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp) // Espacement vertical plus important entre les boutons
+                                .height(48.dp), // Hauteur des boutons un peu plus grande
+                            shape = RoundedCornerShape(16.dp), // Coins arrondis pour les boutons
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFECECEC)), // Couleur de fond plus douce
+                            elevation = ButtonDefaults.elevatedButtonElevation(4.dp) // Légère élévation pour un effet de profondeur
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                // Texte à gauche
+                                Text(
+                                    text = user,
+                                    color = Color.Black,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    textAlign = TextAlign.Start
+                                )
+
+                                // Icône à droite
+                                Icon(
+                                    imageVector = Icons.Default.ArrowForward,
+                                    contentDescription = "Flèche",
+                                    tint = Color.Blue, // Icône plus discrète
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
-        }
+        )
     } else {
         AutreProfilScreen(selectedUser!!) { selectedUser = null }
     }
@@ -97,8 +118,8 @@ fun RechercheScreen() {
 
 
 
-@Composable
 
+@Composable
 fun AutreProfilScreen(username: String, onBack: () -> Unit) {
     var userProfile by remember { mutableStateOf(UserProfile()) }
     val database = FirebaseDatabase.getInstance().reference.child("users")
@@ -145,10 +166,10 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
                         .clip(CircleShape)
                 )
             }
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(10.dp))
             Column {
                 Text(text = userProfile.nomUtilisateur, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Text(text = userProfile.nom, fontSize = 14.sp, color = Color.Gray)
+                //Text(text = userProfile.nom, fontSize = 14.sp, color = Color.Gray)
             }
         }
 
@@ -156,11 +177,11 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
 
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(text = "À propos de moi", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Text(
+            /*Text(
                 text = "Ajouter une biographie",
                 fontSize = 14.sp,
                 color = Color.Gray
-            )
+            )*/
         }
         Spacer(modifier = Modifier.height(15.dp))
 
@@ -182,16 +203,4 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
     }
 
 
-/*fun AutreProfilScreen(username: String, onBack: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Icon(
-            imageVector = Icons.Default.ArrowBack,
-            contentDescription = "Retour",
-            modifier = Modifier.size(32.dp).clickable { onBack() },
-            tint = Color.Black
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "Nom d'utilisateur : $username", fontSize = 20.sp)
-    }
-}
-*/
+

@@ -1,8 +1,12 @@
 package fr.isen.activevibe.profil
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,15 +16,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import fr.isen.activevibe.R
 import fr.isen.activevibe.UserProfile
+import fr.isen.activevibe.API.ImgurUploader
 
 @Composable
 fun App() {
@@ -47,6 +55,9 @@ fun ProfileScreen(onEditClick: () -> Unit) {
     var userProfile by remember { mutableStateOf(UserProfile()) }  // ✅ Stockage du profil utilisateur
     var nomUtilisateur by remember { mutableStateOf("Chargement...") }
 
+    var profileImageUri by remember { mutableStateOf<Uri?>(null) }
+    var profileImageUrl by remember { mutableStateOf<String?>(null) }
+
     val userId = FirebaseAuth.getInstance().currentUser?.uid
     val database = FirebaseDatabase.getInstance().reference.child("users")
 
@@ -61,12 +72,29 @@ fun ProfileScreen(onEditClick: () -> Unit) {
                         nom = snapshot.child("nom").getValue(String::class.java) ?: "Nom inconnu",
                         email = snapshot.child("email").getValue(String::class.java) ?: "Email non disponible"
                     )
-                } else {
-                    nomUtilisateur = "Utilisateur inconnu"
+
+                    // ✅ Récupère l'URL de l'image depuis Firebase
+                    profileImageUrl = snapshot.child("profileImageUrl").getValue(String::class.java)
                 }
             }.addOnFailureListener {
                 nomUtilisateur = "Erreur lors du chargement"
             }
+        }
+    }
+
+    val context = LocalContext.current  // ✅ Déclarer en dehors de la lambda
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        profileImageUri = uri
+        uri?.let {
+            ImgurUploader.uploadToImgur(context, imageUri = it, onSuccess = { imageUrl ->
+                profileImageUrl = imageUrl
+                saveProfileImageToFirebase(imageUrl)
+            }, onFailure = {
+                println("Erreur lors de l'upload de l'image")
+            })
         }
     }
 
@@ -83,17 +111,38 @@ fun ProfileScreen(onEditClick: () -> Unit) {
             // 🔹 Photo de profil
             Box(
                 modifier = Modifier
-                    .size(90.dp)
+                    .size(120.dp)
+                    .background(Color.Gray, shape = CircleShape)
                     .clip(CircleShape)
-                    .background(Color.Transparent)
+                    .clickable { imagePickerLauncher.launch("image/*") },
+                contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.profile),
-                    contentDescription = "Photo de profil",
-                    modifier = Modifier
-                        .size(90.dp)
-                        .clip(CircleShape)
-                )
+                when {
+                    profileImageUri != null -> {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_launcher_foreground), // ✅ Image existante
+                            contentDescription = "Image de profil par défaut",
+                            modifier = Modifier.size(120.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    !profileImageUrl.isNullOrEmpty() -> { // ✅ Affiche l'image depuis Firebase
+                        Image(
+                            painter = rememberAsyncImagePainter(profileImageUrl),
+                            contentDescription = "Photo de profil",
+                            modifier = Modifier.size(120.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    else -> { // ❌ Aucune image, afficher une icône par défaut
+                        Image(
+                            painter = painterResource(R.drawable.profile), // Remplace par ton image par défaut
+                            contentDescription = "Image de profil par défaut",
+                            modifier = Modifier.size(120.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.width(16.dp)) // Espace entre la photo et le texte
@@ -186,5 +235,19 @@ fun GridPlaceholder() {
                 }
             }
         }
+    }
+}
+
+fun saveProfileImageToFirebase(imageUrl: String) {
+    val userId = FirebaseAuth.getInstance().currentUser?.uid
+    if (userId != null) {
+        val database = FirebaseDatabase.getInstance().reference.child("users").child(userId)
+        database.child("profileImageUrl").setValue(imageUrl)
+            .addOnSuccessListener {
+                println("Image enregistrée avec succès")
+            }
+            .addOnFailureListener {
+                println("Erreur lors de l'enregistrement de l'image")
+            }
     }
 }

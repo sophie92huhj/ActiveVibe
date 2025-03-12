@@ -40,8 +40,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import fr.isen.activevibe.API.ImgurUploader
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-
+import androidx.compose.ui.unit.sp
 
 
 @Composable
@@ -194,13 +197,31 @@ fun EditProfilScreen(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 🔹 Bouton retour
+        //bouton retour
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBackClick) {
-                Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Retour")
+            val context = LocalContext.current // ✅ Récupération du contexte
+
+            Button(
+                onClick = onBackClick, // ✅ Utilisation de `onBackClick` pour revenir à la page précédente
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent, // ✅ Fond transparent pour garder le style propre
+                    contentColor = Color.Black // ✅ Couleur de la flèche
+                ),
+                shape = RoundedCornerShape(12.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp), // ✅ Pas d’élévation pour rester propre
+                border = null, // ✅ Pas de bordure
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .height(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack, // ✅ Icône de retour
+                    contentDescription = "Retour",
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
 
@@ -211,6 +232,7 @@ fun EditProfilScreen(
             modifier = Modifier
                 .size(120.dp)
                 .background(Color.Gray, shape = CircleShape)
+                .clip(CircleShape)
                 .clickable { imagePickerLauncher.launch("image/*") },
             contentAlignment = Alignment.Center
         ) {

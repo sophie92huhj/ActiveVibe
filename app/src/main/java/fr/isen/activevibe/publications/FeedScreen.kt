@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -79,6 +80,8 @@ fun PublicationCard(publication: Publication) {
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
     val userLikesRef = FirebaseDatabase.getInstance().getReference("users").child(userId).child("likes")
     val commentsRef = FirebaseDatabase.getInstance().getReference("publications").child(publication.id).child("comments")
+    var profileImageUrl by remember { mutableStateOf<String?>(null) }
+   // var profileImageUrl by remember { mutableStateOf<String?>(null) }
 
     var isLiked by remember { mutableStateOf(false) }
     var showCommentInput by remember { mutableStateOf(false) }
@@ -95,10 +98,12 @@ fun PublicationCard(publication: Publication) {
         })
 
         commentsRef.addValueEventListener(object : ValueEventListener {
+
             override fun onDataChange(snapshot: DataSnapshot) {
                 val fetchedComments = mutableListOf<Pair<String, String>>()
                 for (child in snapshot.children) {
                     val username = child.child("nomUtilisateur").getValue(String::class.java) ?: "Utilisateur inconnu"
+                 
                     val message = child.child("message").getValue(String::class.java) ?: ""
                     fetchedComments.add(username to message)
                 }
@@ -107,6 +112,22 @@ fun PublicationCard(publication: Publication) {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e("FeedScreen", "Erreur récupération des commentaires : ${error.message}")
+            }
+        })
+    }
+
+    LaunchedEffect(publication.nomUtilisateur) {
+        val userProfileRef = FirebaseDatabase.getInstance().getReference("users").orderByChild("nomUtilisateur").equalTo(publication.nomUtilisateur)
+        userProfileRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                for (child in snapshot.children) {
+                    profileImageUrl = child.child("profileImageUrl").getValue(String::class.java)
+                    break // ✅ On prend la première correspondance trouvée
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                println("Erreur récupération image de profil : ${error.message}")
             }
         })
     }
@@ -126,11 +147,14 @@ fun PublicationCard(publication: Publication) {
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
+                Image(
+                    painter = rememberAsyncImagePainter(profileImageUrl ?: R.drawable.profile),
+                    contentDescription = "Photo de profil",
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(Color.Gray)
+                        .background(Color.Gray),
+                    contentScale = ContentScale.Crop
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(

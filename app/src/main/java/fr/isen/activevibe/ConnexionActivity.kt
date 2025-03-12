@@ -9,12 +9,17 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
@@ -148,6 +153,7 @@ fun CustomAuthScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) } // 🔹 Gère l'affichage du mot de passe
 
     Column(
         modifier = Modifier
@@ -161,24 +167,24 @@ fun CustomAuthScreen(
             text = "Bienvenue sur",
             fontSize = 22.sp,
             color = Color(0xFF433AF1),
-            modifier = Modifier.padding(bottom = 8.dp) // Ajout d’un espacement avant le logo
+            modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        // ✅ Logo plus grand
+        // ✅ Logo
         Image(
             painter = painterResource(id = R.drawable.logo),
             contentDescription = "Logo ActiveVibe",
             modifier = Modifier
-                .size(250.dp) // Taille du logo ajustée
-                .padding(bottom = 8.dp) // Espacement après le logo
+                .size(250.dp)
+                .padding(bottom = 8.dp)
         )
 
-        // ✅ Texte "Connexion" sous le logo
+        // ✅ Texte "Connexion"
         Text(
             text = "Connexion / Inscription",
             fontSize = 26.sp,
             color = Color(0xFF433AF1),
-            modifier = Modifier.padding(bottom = 16.dp) // Espacement avant les champs
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
         OutlinedTextField(
@@ -190,19 +196,29 @@ fun CustomAuthScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // 🔹 Champ de mot de passe avec visibilité activable
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Mot de passe") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(
+                        imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                        contentDescription = if (passwordVisible) "Masquer le mot de passe" else "Afficher le mot de passe"
+                    )
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ✅ Bouton Connexion Email avec couleur #433AF1
+        // ✅ Bouton Connexion Email
         Button(
             onClick = { onEmailLoginClicked(email, password) },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF433AF1)), // Couleur mise à jour
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF433AF1)),
             shape = RoundedCornerShape(10.dp),
             modifier = Modifier
                 .fillMaxWidth()
@@ -214,10 +230,10 @@ fun CustomAuthScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // ✅ Bouton Connexion Google avec un gris foncé
+        // ✅ Bouton Connexion Google
         Button(
             onClick = { onGoogleLoginClicked() },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5A5A5A)), // Gris foncé pour contraster
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5A5A5A)),
             shape = RoundedCornerShape(10.dp),
             modifier = Modifier
                 .fillMaxWidth()
@@ -229,12 +245,11 @@ fun CustomAuthScreen(
 
         // ✅ Bouton "Mot de passe oublié ?"
         TextButton(
-            onClick = { onResetPasswordClicked(email) }, // Fonction de reset password
+            onClick = { onResetPasswordClicked(email) },
             modifier = Modifier.padding(top = 8.dp)
         ) {
             Text(text = "Mot de passe oublié ?", color = Color(0xFF433AF1))
         }
-
     }
 }
 

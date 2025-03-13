@@ -9,6 +9,7 @@ import fr.isen.activevibe.publications.FeedScreen
 import fr.isen.activevibe.publications.PublicationScreen
 import fr.isen.activevibe.profil.ProfileScreen
 import fr.isen.activevibe.recherche.RechercheScreen
+import fr.isen.activevibe.messages.Message
 
 
 @Composable
@@ -39,5 +40,5 @@ fun ProfileScreen1(onEditClick: () -> Unit) {
 
 @Composable
 fun MessagesScreen() {
-    Text("Page: Messages", fontSize = 24.sp)
+    Message()
 }

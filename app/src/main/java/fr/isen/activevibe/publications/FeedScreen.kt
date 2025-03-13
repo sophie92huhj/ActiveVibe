@@ -9,8 +9,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.ModeComment
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -41,7 +43,7 @@ fun FeedScreen(modifier: Modifier = Modifier) {
                     val pub = child.getValue(Publication::class.java)
                     if (pub != null) {
                         fetchedPublications.add(pub)
-                        Log.d("FirebaseDebug", "Publication récupérée: ${pub.nomUtilisateur}") // ✅ Vérification
+                        Log.d("FirebaseDebug", "Publication récupérée: ${pub.nomUtilisateur}")
                     }
                 }
                 publications.clear()
@@ -81,12 +83,12 @@ fun PublicationCard(publication: Publication) {
     val userLikesRef = FirebaseDatabase.getInstance().getReference("users").child(userId).child("likes")
     val commentsRef = FirebaseDatabase.getInstance().getReference("publications").child(publication.id).child("comments")
     var profileImageUrl by remember { mutableStateOf<String?>(null) }
-    // var profileImageUrl by remember { mutableStateOf<String?>(null) }
-
     var isLiked by remember { mutableStateOf(false) }
     var showCommentInput by remember { mutableStateOf(false) }
     var commentText by remember { mutableStateOf("") }
-    var comments by remember { mutableStateOf(listOf<Pair<String, String>>()) }
+    //var comments by remember { mutableStateOf(listOf<Pair<String, String>>()) }
+    var expandedMenu by remember { mutableStateOf(false) }
+    var comments by remember { mutableStateOf<List<Pair<String, Pair<String, String>>>>(listOf()) } // Modifié ici
 
     LaunchedEffect(Unit) {
         userLikesRef.child(publication.id).addListenerForSingleValueEvent(object : ValueEventListener {
@@ -98,16 +100,16 @@ fun PublicationCard(publication: Publication) {
         })
 
         commentsRef.addValueEventListener(object : ValueEventListener {
-
             override fun onDataChange(snapshot: DataSnapshot) {
-                val fetchedComments = mutableListOf<Pair<String, String>>()
+                val fetchedComments = mutableListOf<Pair<String, Pair<String, String>>>()
                 for (child in snapshot.children) {
+                    val commentId = child.key ?: continue
                     val username = child.child("nomUtilisateur").getValue(String::class.java) ?: "Utilisateur inconnu"
-
                     val message = child.child("message").getValue(String::class.java) ?: ""
-                    fetchedComments.add(username to message)
+                    fetchedComments.add(commentId to (username to message))
+                    // Ajoute l'ID du commentaire
                 }
-                comments = fetchedComments
+                comments = fetchedComments // Mets à jour les commentaires dans l'état
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -122,7 +124,7 @@ fun PublicationCard(publication: Publication) {
             override fun onDataChange(snapshot: DataSnapshot) {
                 for (child in snapshot.children) {
                     profileImageUrl = child.child("profileImageUrl").getValue(String::class.java)
-                    break // ✅ On prend la première correspondance trouvée
+                    break
                 }
             }
 
@@ -130,6 +132,31 @@ fun PublicationCard(publication: Publication) {
                 println("Erreur récupération image de profil : ${error.message}")
             }
         })
+    }
+
+
+    fun deleteComment(commentId: String) {
+        // Suppression du commentaire dans la base de données Firebase
+        commentsRef.child(commentId).removeValue().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                // Mise à jour de l'état local des commentaires pour supprimer le commentaire
+                comments = comments.filterNot { it.first == commentId } // Filtrer le commentaire supprimé
+                Log.d("FeedScreen", "Commentaire supprimé avec succès.")
+            } else {
+                Log.e("FeedScreen", "Erreur lors de la suppression du commentaire.")
+            }
+        }
+    }
+
+
+    fun deleteAllComments() {
+        commentsRef.removeValue().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                Log.d("FeedScreen", "Tous les commentaires ont été supprimés")
+            } else {
+                Log.e("FeedScreen", "Erreur lors de la suppression des commentaires")
+            }
+        }
     }
 
     Card(
@@ -140,7 +167,7 @@ fun PublicationCard(publication: Publication) {
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Column(modifier = Modifier.background(Color.White)) {
-            // ✅ En-tête avec le nom d'utilisateur
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -162,9 +189,28 @@ fun PublicationCard(publication: Publication) {
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
+
+
+                IconButton(onClick = { expandedMenu = !expandedMenu }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "Options")
+                }
+
+
+                DropdownMenu(
+                    expanded = expandedMenu,
+                    onDismissRequest = { expandedMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Supprimer tous les commentaires") },
+                        onClick = {
+                            deleteAllComments()
+                            expandedMenu = false
+                        }
+                    )
+                }
             }
 
-            // ✅ Image de la publication
+            // Image de la publication
             publication.imageUrl?.let { imageUrl ->
                 if (imageUrl.isNotEmpty()) {
                     Image(
@@ -178,14 +224,27 @@ fun PublicationCard(publication: Publication) {
                 }
             }
 
-            // ✅ Description de la publication
+            //  Afficher le type de sport
+            publication.sportType?.let { sport ->
+                Text(
+                    text = "$sport",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
+
+            // Description de la publication
             Text(
                 text = publication.description,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
             )
 
-            // ✅ Barre d'actions (Like, Commentaire)
+
+
+            // Barre d'actions (Like, Commentaire)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -211,7 +270,7 @@ fun PublicationCard(publication: Publication) {
                 }
             }
 
-            // ✅ Affichage du champ de commentaire
+            // Affichage du champ de commentaire
             if (showCommentInput) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     OutlinedTextField(
@@ -240,21 +299,25 @@ fun PublicationCard(publication: Publication) {
                                 }
                             }
                         },
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(top = 8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
                     ) {
                         Text("Envoyer")
                     }
                 }
             }
 
-            // ✅ Affichage des commentaires sous la publication
+
             if (comments.isNotEmpty()) {
                 Column(modifier = Modifier.padding(horizontal = 12.dp)) {
-                    comments.forEach { (username, message) ->
+
+                    val commentsList = comments.toList()
+                    commentsList.forEachIndexed { index, (username, message) ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+
                             Text(
                                 text = "$username : $message",
                                 fontSize = 14.sp,
@@ -262,6 +325,17 @@ fun PublicationCard(publication: Publication) {
                                 color = Color.Black,
                                 modifier = Modifier.weight(1f)
                             )
+
+
+                            // Récupère l'ID du commentaire (commentId) à partir de la liste des commentaires
+                            val commentId = commentsList.getOrNull(index)?.first
+                            if (commentId != null) {
+                                // Permet à tout le monde de supprimer un commentaire en cliquant sur l'icône de suppression
+                                IconButton(onClick = { deleteComment(commentId) }) {
+                                    Icon(Icons.Filled.Delete, contentDescription = "Supprimer", tint = Color.Black)
+                                }
+
+                            }
                         }
                     }
                 }

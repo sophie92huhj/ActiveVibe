@@ -8,7 +8,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
@@ -61,15 +60,15 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // ✅ Affichage du logo
+
         Image(
             painter = painterResource(id = R.drawable.activevibe),
             contentDescription = "Logo ActiveVibe",
             modifier = Modifier
-                .size(120.dp) // Ajuste la taille selon ton besoin
+                .size(120.dp)
                 .padding(bottom = 12.dp)
         )
-        // ✅ Titre en haut
+
         Text(
             text = "Ajouter une publication",
             fontSize = 22.sp,
@@ -79,12 +78,12 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // ✅ Sélection du sport
+
         Box(modifier = Modifier.fillMaxWidth()) {
             Button(
                 onClick = { expanded = true },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(Color(0xFFF0F0F0))
+                colors = ButtonDefaults.buttonColors(Color(0xE5E0E8FF))
             ) {
                 Text(sportType, color = Color.Black)
             }
@@ -100,7 +99,7 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        // ✅ Description
+
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
@@ -108,14 +107,14 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxWidth()
         )
 
-        // ✅ Champs spécifiques pour Course à pied et Natation
+
         if (sportType == "Course à pied" || sportType == "Natation") {
             OutlinedTextField(value = duration, onValueChange = { duration = it }, label = { Text("Durée (min)") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = distance, onValueChange = { distance = it }, label = { Text("Distance (km)") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = speed, onValueChange = { speed = it }, label = { Text("Vitesse (km/h)") }, modifier = Modifier.fillMaxWidth())
         }
 
-        // ✅ Afficher la miniature SEULEMENT si une photo est sélectionnée
+
         if (imageUri != null) {
             Card(
                 modifier = Modifier
@@ -136,7 +135,7 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
 
         Button(
             onClick = { imagePickerLauncher.launch("image/*") },
-            colors = ButtonDefaults.buttonColors(Color(0xFF433AF1)), // Même couleur que le titre
+            colors = ButtonDefaults.buttonColors(Color(0xFF433AF1)),
             modifier = Modifier.clip(RoundedCornerShape(12.dp))
         ) {
             Text("Ajouter une photo", color = Color.White)
@@ -158,14 +157,14 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
                     Toast.makeText(context, "Veuillez remplir au moins le sport et la description", Toast.LENGTH_SHORT).show()
                 }
             },
-            modifier = Modifier.background(Color(0xFF433AF1)) // Même couleur que "Ajouter une publication"
+            modifier = Modifier.background(Color.White)
         ) {
             Icon(Icons.Default.Send, contentDescription = "Publier", tint = Color.White)
         }
     }
 }
 
-// ✅ Fonction pour enregistrer une publication dans Firebase avec l'URL de l'image
+
 fun savePublicationToDatabase(
     sportType: String,
     description: String,
@@ -181,7 +180,7 @@ fun savePublicationToDatabase(
     if (userId != null) {
         val usersRef = FirebaseDatabase.getInstance().getReference("users").child(userId)
 
-        // 🔹 Récupérer `nomUtilisateur` depuis la base de données avant de publier
+
         usersRef.child("nomUtilisateur").get().addOnSuccessListener { snapshot ->
             val username = snapshot.value as? String ?: "Utilisateur inconnu"
 
@@ -195,7 +194,7 @@ fun savePublicationToDatabase(
                 speed = speed.takeIf { it?.isNotEmpty() == true },
                 imageUrl = imageUrl,
                 timestamp = System.currentTimeMillis(),
-                nomUtilisateur = username  // 🔥 Ajout du `nomUtilisateur`
+                nomUtilisateur = username
             )
 
             newPublication.setValue(publication)

@@ -1,12 +1,18 @@
 package fr.isen.activevibe.messages
 
 import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -140,16 +146,15 @@ fun Message() {
     val currentUser = FirebaseAuth.getInstance().currentUser
     var currentUsername by remember { mutableStateOf("") }
 
+    var conversations by remember { mutableStateOf(emptyList<Conversation>()) }
     var users by remember { mutableStateOf(emptyList<UserProfile>()) }
     var searchQuery by remember { mutableStateOf("") }
-    var filteredUsers by remember { mutableStateOf(emptyList<UserProfile>()) }
-    var conversations by remember { mutableStateOf(emptyList<Conversation>()) }
-    var selectedChatUser by remember { mutableStateOf<String?>(null) } // ✅ Permet d'afficher `ChatScreen()`
+    var showSearch by remember { mutableStateOf(false) } // ✅ Gère l'affichage de la recherche
+    var selectedChatUser by remember { mutableStateOf<String?>(null) } // ✅ Stocke l'utilisateur sélectionné
 
-    // 🔹 Charger les utilisateurs et conversations
+    // 🔹 Charger les conversations de l'utilisateur connecté
     LaunchedEffect(Unit) {
-        val firebaseAuth = FirebaseAuth.getInstance()
-        val userId = firebaseAuth.currentUser?.uid ?: return@LaunchedEffect
+        val userId = currentUser?.uid ?: return@LaunchedEffect
         val userRef = FirebaseDatabase.getInstance().reference.child("users").child(userId)
 
         userRef.child("nomUtilisateur").get().addOnSuccessListener { snapshot ->
@@ -157,73 +162,125 @@ fun Message() {
             currentUsername = fetchedUsername
             Log.d("MessagesDebug", "Nom utilisateur récupéré : $currentUsername")
 
-            MessagesRepository.getUsers { userList ->
-                users = userList
-                filteredUsers = userList
+            // ✅ Charger toutes les conversations
+            MessagesRepository.getUserConversations(fetchedUsername) { conversationList ->
+                conversations = conversationList.sortedByDescending { it.lastMessageTimestamp }
             }
 
-            MessagesRepository.getUserConversations(fetchedUsername) { conversationList ->
-                conversations = conversationList
+            // ✅ Charger tous les utilisateurs pour la recherche
+            MessagesRepository.getUsers { userList ->
+                users = userList.filter { it.nomUtilisateur != fetchedUsername }
             }
         }
     }
 
+    // ✅ Si un chat est sélectionné, on affiche uniquement le chat en **PLEIN ÉCRAN**
+    selectedChatUser?.let { chatUser ->
+        ChatScreen(receiverName = chatUser) { selectedChatUser = null }
+        return
+    }
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        if (selectedChatUser == null) {
-            // ✅ Écran principal des messages
-            Text("Messages", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        Text("Messages", fontSize = 24.sp, fontWeight = FontWeight.Bold)
 
-            Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-            // 🔹 Champ de recherche
+        // 🔹 Bouton pour rechercher un nouvel utilisateur
+        Button(
+            onClick = { showSearch = !showSearch },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (showSearch) "Fermer la recherche" else "Nouvelle discussion")
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // ✅ Affichage de la recherche UNIQUEMENT si showSearch est activé
+        if (showSearch) {
             OutlinedTextField(
                 value = searchQuery,
-                onValueChange = { query ->
-                    searchQuery = query
-                    filteredUsers = users.filter { it.nomUtilisateur.contains(query, ignoreCase = true) }
-                },
+                onValueChange = { searchQuery = it },
                 label = { Text("Rechercher un utilisateur...") },
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // 🔹 Liste des utilisateurs
+            val filteredUsers = users.filter { it.nomUtilisateur.contains(searchQuery, ignoreCase = true) }
             LazyColumn {
                 items(filteredUsers) { user ->
-                    if (user.nomUtilisateur != currentUsername) {
-                        Button(
-                            onClick = { selectedChatUser = user.nomUtilisateur }, // ✅ Sélectionne l'utilisateur
-                            modifier = Modifier.fillMaxWidth().padding(8.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .clickable { selectedChatUser = user.nomUtilisateur; showSearch = false },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(50.dp)
+                                .clip(CircleShape)
+                                .background(Color.Gray),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text("Ouvrir la discussion avec ${user.nomUtilisateur}")
+                            Text(
+                                text = user.nomUtilisateur.first().toString().uppercase(),
+                                color = Color.White,
+                                fontSize = 20.sp
+                            )
                         }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Text(text = user.nomUtilisateur, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-            // 🔹 Liste des conversations récentes
-            Text("Conversations récentes", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        // ✅ Liste des conversations récentes
+        Text("Conversations récentes", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        if (conversations.isEmpty()) {
+            Text("Aucune conversation pour le moment", color = Color.Gray, fontSize = 16.sp)
+        } else {
             LazyColumn {
                 items(conversations) { conversation ->
                     val chatPartnerName = if (conversation.user1 == currentUsername) conversation.user2 else conversation.user1
 
-                    Button(
-                        onClick = { selectedChatUser = chatPartnerName }, // ✅ Ouvre la conversation
-                        modifier = Modifier.fillMaxWidth().padding(8.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .clickable { selectedChatUser = chatPartnerName },
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Reprendre la discussion avec $chatPartnerName")
+                        Box(
+                            modifier = Modifier
+                                .size(50.dp)
+                                .clip(CircleShape)
+                                .background(Color.Gray),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = chatPartnerName.first().toString().uppercase(),
+                                color = Color.White,
+                                fontSize = 20.sp
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column {
+                            Text(text = chatPartnerName, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text(text = conversation.lastMessage, fontSize = 14.sp, color = Color.Gray)
+                        }
                     }
                 }
-            }
-        } else {
-            // ✅ Lorsque `selectedChatUser` est défini, on affiche `ChatScreen()`
-            ChatScreen(receiverName = selectedChatUser!!) {
-                selectedChatUser = null // ✅ Retour à la liste des messages quand on appuie sur "Retour"
             }
         }
     }
 }
+
 

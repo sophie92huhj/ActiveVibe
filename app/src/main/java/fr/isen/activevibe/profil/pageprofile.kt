@@ -38,6 +38,9 @@ import fr.isen.activevibe.UserProfile
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import android.content.Context
+import android.widget.Toast
+import com.google.firebase.database.DatabaseReference
 
 @Composable
 fun App() {
@@ -354,6 +357,9 @@ fun UserPublications(userId: String) {
 
 @Composable
 fun PublicationCard(publication: Publication) {
+    val database = FirebaseDatabase.getInstance().getReference("publications")
+    val context = LocalContext.current
+
     Card(
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(4.dp),
@@ -394,10 +400,9 @@ fun PublicationCard(publication: Publication) {
                 }
             }
 
-            // ✅ Espacement entre l’image et la description
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ✅ Titre / Description
+            // ✅ Description
             Text(
                 text = publication.description,
                 fontSize = 14.sp,
@@ -405,7 +410,6 @@ fun PublicationCard(publication: Publication) {
             )
 
             // ✅ Affichage des champs optionnels
-            // Durée (si applicable)
             publication.duration?.takeIf { it.isNotEmpty() }?.let { duration ->
                 Text(
                     text = "Durée: $duration min",
@@ -415,7 +419,6 @@ fun PublicationCard(publication: Publication) {
                 )
             }
 
-            // Distance (si applicable)
             publication.distance?.takeIf { it.isNotEmpty() }?.let { distance ->
                 Text(
                     text = "Distance: $distance km",
@@ -425,7 +428,6 @@ fun PublicationCard(publication: Publication) {
                 )
             }
 
-            // Vitesse (si applicable)
             publication.speed?.takeIf { it.isNotEmpty() }?.let { speed ->
                 Text(
                     text = "Vitesse: $speed km/h",
@@ -435,7 +437,6 @@ fun PublicationCard(publication: Publication) {
                 )
             }
 
-            // ✅ Affichage de la date de la publication (timestamp)
             publication.timestamp?.let { timestamp ->
                 val date = Date(timestamp)
                 val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
@@ -447,6 +448,36 @@ fun PublicationCard(publication: Publication) {
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                 )
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ✅ Bouton Supprimer (Affiché uniquement pour l'utilisateur qui a posté)
+            val userId = FirebaseAuth.getInstance().currentUser?.uid
+            //if (userId != null && publication.nomUtilisateur == userId) {
+                Button(
+                    onClick = {
+                        deletePublication(database, publication.id, context)
+                    },
+                    colors = ButtonDefaults.buttonColors(Color.Red),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Text("Supprimer", color = Color.White)
+                }
+            }
         }
+    }
+
+
+fun deletePublication(database: DatabaseReference, publicationId: String, context: Context) {
+    if (publicationId.isNotEmpty()) {
+        database.child(publicationId).removeValue()
+            .addOnSuccessListener {
+                Toast.makeText(context, "Publication supprimée", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener {
+                Toast.makeText(context, "Erreur lors de la suppression", Toast.LENGTH_SHORT).show()
+            }
     }
 }

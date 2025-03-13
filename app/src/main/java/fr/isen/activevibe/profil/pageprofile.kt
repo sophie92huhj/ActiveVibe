@@ -35,6 +35,9 @@ import fr.isen.activevibe.API.ImgurUploader
 import fr.isen.activevibe.Publication
 import fr.isen.activevibe.R
 import fr.isen.activevibe.UserProfile
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun App() {
@@ -277,28 +280,48 @@ fun saveProfileImageToFirebase(imageUrl: String) {
 @Composable
 fun UserPublications(userId: String) {
     val database = FirebaseDatabase.getInstance().getReference("publications")
+    val userDatabase = FirebaseDatabase.getInstance().getReference("users").child(userId)
+
     val userPublications = remember { mutableStateListOf<Publication>() }
+    var nomUtilisateur by remember { mutableStateOf<String?>(null) }
 
-    // 🔹 Récupérer les publications de l'utilisateur
+    // 🔹 Étape 1 : Récupérer le nom d'utilisateur de l'utilisateur connecté
     LaunchedEffect(userId) {
-        database.orderByChild("userId").equalTo(userId).addValueEventListener(object :
-            ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                val fetchedPublications = mutableListOf<Publication>()
-                for (child in snapshot.children) {
-                    val pub = child.getValue(Publication::class.java)
-                    if (pub != null) {
-                        fetchedPublications.add(pub)
-                    }
-                }
-                userPublications.clear()
-                userPublications.addAll(fetchedPublications)
-            }
+        userDatabase.child("nomUtilisateur").get().addOnSuccessListener { snapshot ->
+            val fetchedNomUtilisateur = snapshot.getValue(String::class.java)
+            if (fetchedNomUtilisateur != null) {
+                nomUtilisateur = fetchedNomUtilisateur
+                Log.d("UserPublications", "Nom utilisateur récupéré : $nomUtilisateur")
 
-            override fun onCancelled(error: DatabaseError) {
-                Log.e("ProfileScreen", "Erreur chargement publications : ${error.message}")
+                // 🔹 Étape 2 : Récupérer les publications de cet utilisateur et les trier
+                database.orderByChild("timestamp").addListenerForSingleValueEvent(object : ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        val fetchedPublications = mutableListOf<Publication>()
+
+                        Log.d("UserPublications", "Nombre de publications trouvées : ${snapshot.childrenCount}")
+
+                        for (child in snapshot.children) {
+                            val pub = child.getValue(Publication::class.java)
+                            if (pub != null && pub.nomUtilisateur == nomUtilisateur) {
+                                fetchedPublications.add(pub)
+                            }
+                        }
+
+                        // ✅ Trier par ordre décroissant (plus récent en premier)
+                        userPublications.clear()
+                        userPublications.addAll(fetchedPublications.sortedByDescending { it.timestamp ?: 0 })
+                    }
+
+                    override fun onCancelled(error: DatabaseError) {
+                        Log.e("UserPublications", "Erreur chargement publications : ${error.message}")
+                    }
+                })
+            } else {
+                Log.e("UserPublications", "Nom utilisateur non trouvé")
             }
-        })
+        }.addOnFailureListener {
+            Log.e("UserPublications", "Erreur récupération nom utilisateur")
+        }
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -321,7 +344,7 @@ fun UserPublications(userId: String) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(userPublications.toList()) { publication ->  // ✅ Conversion en liste normale
+                items(userPublications) { publication ->
                     PublicationCard(publication)
                 }
             }
@@ -340,25 +363,90 @@ fun PublicationCard(publication: Publication) {
     ) {
         Column(modifier = Modifier.background(Color.White)) {
             // ✅ Image de la publication
-            publication.imageUrl?.let { imageUrl ->
-                if (imageUrl.isNotEmpty()) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                publication.imageUrl?.takeIf { it.isNotEmpty() }?.let { imageUrl ->
                     Image(
                         painter = rememberAsyncImagePainter(imageUrl),
                         contentDescription = "Image de la publication",
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(400.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .height(250.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
                     )
+                }
+
+                // ✅ Affichage du sport en bannière
+                publication.sportType?.takeIf { it.isNotEmpty() }?.let { sport ->
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .background(Color(0xff433af1), shape = RoundedCornerShape(bottomEnd = 8.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = sport,
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
-            // ✅ Description de la publication
+            // ✅ Espacement entre l’image et la description
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ✅ Titre / Description
             Text(
                 text = publication.description,
                 fontSize = 14.sp,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
             )
+
+            // ✅ Affichage des champs optionnels
+            // Durée (si applicable)
+            publication.duration?.takeIf { it.isNotEmpty() }?.let { duration ->
+                Text(
+                    text = "Durée: $duration min",
+                    fontSize = 12.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
+
+            // Distance (si applicable)
+            publication.distance?.takeIf { it.isNotEmpty() }?.let { distance ->
+                Text(
+                    text = "Distance: $distance km",
+                    fontSize = 12.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
+
+            // Vitesse (si applicable)
+            publication.speed?.takeIf { it.isNotEmpty() }?.let { speed ->
+                Text(
+                    text = "Vitesse: $speed km/h",
+                    fontSize = 12.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
+
+            // ✅ Affichage de la date de la publication (timestamp)
+            publication.timestamp?.let { timestamp ->
+                val date = Date(timestamp)
+                val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                val formattedDate = formatter.format(date)
+                Text(
+                    text = "Publié le : $formattedDate",
+                    fontSize = 12.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
         }
     }
 }

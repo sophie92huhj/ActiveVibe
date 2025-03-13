@@ -245,8 +245,8 @@ fun ProfileScreen(onEditClick: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceAround
         ) {
             ProfileStat(publicationCount.toString(), "Posts")
-            ProfileStat("1.2K", "Abonnés")
-            ProfileStat("200", "Abonnements")
+            ProfileStat("673", "Abonnés")
+            ProfileStat("710", "Abonnements")
         }
 
         Spacer(modifier = Modifier.height(24.dp))

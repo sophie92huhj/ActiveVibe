@@ -46,14 +46,13 @@ import java.util.Locale
 
 data class UserItem(
     val nomUtilisateur: String,
-    val profileImageUrl: String? // Peut être null si l'utilisateur n'a pas mis de photo
+    val profileImageUrl: String?
 )
 
 
 @Composable
 fun RechercheScreen() {
     var searchText by remember { mutableStateOf("") }
-    //var users by remember { mutableStateOf(listOf<String>()) }
     var selectedUser by remember { mutableStateOf<String?>(null) }
     val scrollState = rememberScrollState()
     var users by remember { mutableStateOf(listOf<UserItem>()) }
@@ -65,7 +64,6 @@ fun RechercheScreen() {
             override fun onDataChange(snapshot: DataSnapshot) {
                 users = snapshot.children.mapNotNull { userSnapshot ->
                     val nomUtilisateur = userSnapshot.child("nomUtilisateur").getValue(String::class.java)
-                    //var profileImageUrl = userSnapshot.child("profileImageUrl").getValue(String::class.java)
                     var profileImageUrl = userSnapshot.child("profileImageUrl").getValue(String::class.java) ?: ""
 
                     if (nomUtilisateur != null) {
@@ -144,7 +142,7 @@ fun RechercheScreen() {
 
 
                                 Text(
-                                    text = user.nomUtilisateur,  // ✅ Affiche le nom d’utilisateur
+                                    text = user.nomUtilisateur,
                                     color = Color.Black,
                                     modifier = Modifier.fillMaxWidth(),
                                     style = MaterialTheme.typography.bodyMedium,
@@ -178,9 +176,9 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
     val database = FirebaseDatabase.getInstance().reference.child("users")
     val publicationsDatabase = FirebaseDatabase.getInstance().getReference("publications")
 
-    val userPublications = remember { mutableStateListOf<Publication>() } // Liste des publications complètes
+    val userPublications = remember { mutableStateListOf<Publication>() }
 
-    // 🔹 Récupérer les informations de l'utilisateur
+    // Récupérer les informations de l'utilisateur
     LaunchedEffect(username) {
         database.orderByChild("nomUtilisateur").equalTo(username).get().addOnSuccessListener { snapshot ->
             if (snapshot.exists()) {
@@ -193,7 +191,7 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
             }
         }
 
-        // 🔹 Charger toutes les publications de cet utilisateur
+        //  Charger toutes les publications de cet utilisateur
         publicationsDatabase.orderByChild("nomUtilisateur").equalTo(username).addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val fetchedPublications = mutableListOf<Publication>()
@@ -218,7 +216,7 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // 🔙 Icône de retour
+        // Icône de retour
         Icon(
             imageVector = Icons.Default.ArrowBack,
             contentDescription = "Retour",
@@ -228,7 +226,7 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
             tint = Color.Black
         )
 
-        // 🖼️ Profil utilisateur (photo et nom)
+        // Profil utilisateur (photo et nom)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
@@ -272,7 +270,7 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(15.dp))
 
-        // 📊 Statistiques
+        // Statistiques
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceAround
@@ -284,7 +282,6 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 📌 Affichage des publications sous forme de liste complète
         UserPublicationsList(userPublications)
     }
 }
@@ -320,7 +317,7 @@ fun PublicationCardWithoutDelete(publication: Publication) {
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Column(modifier = Modifier.background(Color.White)) {
-            // ✅ Affichage du sport en bannière
+            //  Affichage du sport en bannière
             publication.sportType?.takeIf { it.isNotEmpty() }?.let { sport ->
                 Box(
                     modifier = Modifier
@@ -338,7 +335,7 @@ fun PublicationCardWithoutDelete(publication: Publication) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ✅ Afficher l'image uniquement si elle existe
+
             publication.imageUrl?.takeIf { it.isNotEmpty() }?.let { imageUrl ->
                 Image(
                     painter = rememberAsyncImagePainter(imageUrl),
@@ -352,22 +349,22 @@ fun PublicationCardWithoutDelete(publication: Publication) {
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // ✅ Ajout d'un fond coloré pour les posts sans image (optionnel)
+            // Ajout d'un fond coloré pour les posts sans image
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White) // 🌟 Fond violet clair pour un meilleur rendu
+                    .background(Color.White)
                     .padding(12.dp)
             ) {
                 Column {
-                    // ✅ Description
+                    //  Description
                     Text(
                         text = publication.description,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     )
 
-                    // ✅ Affichage des champs optionnels
+                    //  Affichage des champs optionnels
                     publication.duration?.takeIf { it.isNotEmpty() }?.let { duration ->
                         Text(
                             text = "Durée: $duration min",

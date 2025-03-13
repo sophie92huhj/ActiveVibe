@@ -53,10 +53,10 @@ fun App() {
         EditProfilScreen(
             userProfile = userProfile,
             saveProfile = { updatedProfile ->
-                userProfile = updatedProfile // ✅ Met à jour les données utilisateur
-                showEditProfile = false // ✅ Retour à `ProfileScreen`
+                userProfile = updatedProfile
+                showEditProfile = false
             },
-            onBackClick = { showEditProfile = false } // ✅ Retour sans mise à jour
+            onBackClick = { showEditProfile = false }
         )
     } else {
         ProfileScreen(onEditClick = { showEditProfile = true })
@@ -66,43 +66,46 @@ fun App() {
 
 @Composable
 fun ProfileScreen(onEditClick: () -> Unit) {
-    var userProfile by remember { mutableStateOf(UserProfile()) }  // ✅ Stockage du profil utilisateur
+    var userProfile by remember { mutableStateOf(UserProfile()) }
     var nomUtilisateur by remember { mutableStateOf("Chargement...") }
 
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
     var profileImageUrl by remember { mutableStateOf<String?>(null) }
+    var publicationCount by remember { mutableStateOf(0) }
 
     val userId = FirebaseAuth.getInstance().currentUser?.uid
     val database = FirebaseDatabase.getInstance().reference.child("users")
     val userPublications = remember { mutableStateListOf<Publication>() }
-    // 🔹 Chargement des infos Firebase Realtime Database
-    LaunchedEffect(userId) {
-        database.orderByChild("userId").equalTo(userId).addListenerForSingleValueEvent(object :
-            ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                val fetchedPublications = mutableListOf<Publication>()
-                for (child in snapshot.children) {
-                    val pub = child.getValue(Publication::class.java)
-                    if (pub != null) {
-                        fetchedPublications.add(pub)
-                    }
-                }
-                userPublications.clear()
-                userPublications.addAll(fetchedPublications)
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                Log.e("ProfileScreen", "Erreur chargement publications : ${error.message}")
-            }
-        })
-    }
 
     LaunchedEffect(userId) {
         userId?.let {
             database.child(it).get().addOnSuccessListener { snapshot ->
                 if (snapshot.exists()) {
                     nomUtilisateur = snapshot.child("nomUtilisateur").getValue(String::class.java) ?: "Utilisateur inconnu"
-                    profileImageUrl = snapshot.child("profileImageUrl").getValue(String::class.java) ?: "" // ✅ Récupération de l'image
+                    profileImageUrl = snapshot.child("profileImageUrl").getValue(String::class.java) ?: ""
+
+                    //  récupérer les publications de cet utilisateur
+                    val publicationsRef = FirebaseDatabase.getInstance().reference.child("publications")
+                    publicationsRef.orderByChild("nomUtilisateur").equalTo(nomUtilisateur)
+                        .addListenerForSingleValueEvent(object : ValueEventListener {
+                            override fun onDataChange(snapshot: DataSnapshot) {
+                                val fetchedPublications = mutableListOf<Publication>()
+                                for (child in snapshot.children) {
+                                    val pub = child.getValue(Publication::class.java)
+                                    if (pub != null) {
+                                        fetchedPublications.add(pub)
+                                    }
+                                }
+                                // Mettre à jour le compteur de publications
+                                publicationCount = fetchedPublications.size
+                                userPublications.clear()
+                                userPublications.addAll(fetchedPublications.sortedByDescending { it.timestamp ?: 0 })
+                            }
+
+                            override fun onCancelled(error: DatabaseError) {
+                                Log.e("ProfileScreen", "Erreur chargement publications : ${error.message}")
+                            }
+                        })
                 } else {
                     nomUtilisateur = "Utilisateur introuvable"
                 }
@@ -112,7 +115,22 @@ fun ProfileScreen(onEditClick: () -> Unit) {
         }
     }
 
-    val context = LocalContext.current  // ✅ Déclarer en dehors de la lambda
+    LaunchedEffect(userId) {
+        userId?.let {
+            database.child(it).get().addOnSuccessListener { snapshot ->
+                if (snapshot.exists()) {
+                    nomUtilisateur = snapshot.child("nomUtilisateur").getValue(String::class.java) ?: "Utilisateur inconnu"
+                    profileImageUrl = snapshot.child("profileImageUrl").getValue(String::class.java) ?: ""
+                } else {
+                    nomUtilisateur = "Utilisateur introuvable"
+                }
+            }.addOnFailureListener {
+                nomUtilisateur = "Erreur chargement"
+            }
+        }
+    }
+
+    val context = LocalContext.current
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -133,12 +151,12 @@ fun ProfileScreen(onEditClick: () -> Unit) {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // ✅ Alignement de la photo et du nom d'utilisateur (comme Instagram)
+        //  Alignement de la photo et du nom d'utilisateur
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            // 🔹 Photo de profil
+            //  Photo de profil
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -150,13 +168,13 @@ fun ProfileScreen(onEditClick: () -> Unit) {
                 when {
                     profileImageUri != null -> {
                         Image(
-                            painter = painterResource(id = R.drawable.ic_launcher_foreground), // ✅ Image existante
+                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
                             contentDescription = "Image de profil par défaut",
                             modifier = Modifier.size(120.dp),
                             contentScale = ContentScale.Crop
                         )
                     }
-                    !profileImageUrl.isNullOrEmpty() -> { // ✅ Affiche l'image depuis Firebase
+                    !profileImageUrl.isNullOrEmpty() -> {
                         Image(
                             painter = rememberAsyncImagePainter(profileImageUrl),
                             contentDescription = "Photo de profil",
@@ -164,9 +182,9 @@ fun ProfileScreen(onEditClick: () -> Unit) {
                             contentScale = ContentScale.Crop
                         )
                     }
-                    else -> { // ❌ Aucune image, afficher une icône par défaut
+                    else -> {
                         Image(
-                            painter = painterResource(R.drawable.profile), // Remplace par ton image par défaut
+                            painter = painterResource(R.drawable.profile),
                             contentDescription = "Image de profil par défaut",
                             modifier = Modifier.size(120.dp),
                             contentScale = ContentScale.Crop
@@ -175,7 +193,7 @@ fun ProfileScreen(onEditClick: () -> Unit) {
                 }
             }
 
-            Spacer(modifier = Modifier.width(16.dp)) // Espace entre la photo et le texte
+            Spacer(modifier = Modifier.width(16.dp))
 
             // 🔹 Nom d'utilisateur et nom
             Column {
@@ -185,7 +203,7 @@ fun ProfileScreen(onEditClick: () -> Unit) {
 
         Spacer(modifier = Modifier.height(25.dp))
 
-        // 🔹 Bio alignée à gauche
+
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(text = "À propos de moi", fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Text(
@@ -197,9 +215,9 @@ fun ProfileScreen(onEditClick: () -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 🔹 Bouton d'édition du profil
+        //  Bouton d'édition du profil
         Button(
-            onClick = onEditClick, // ✅ Utilisation de `onEditClick` pour afficher `EditProfilScreen`
+            onClick = onEditClick,
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFFE0E0E0),
                 contentColor = Color(0xFF424242)
@@ -221,19 +239,19 @@ fun ProfileScreen(onEditClick: () -> Unit) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // 🔹 Statistiques du profil
+        //  Statistiques du profil
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceAround
         ) {
-            ProfileStat("15", "Posts")
+            ProfileStat(publicationCount.toString(), "Posts")
             ProfileStat("1.2K", "Abonnés")
             ProfileStat("200", "Abonnements")
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-// 🔹 Afficher les publications de l'utilisateur
+//  Afficher les publications de l'utilisateur
         userId?.let { UserPublications(it) }
     }
 }
@@ -290,7 +308,7 @@ fun UserPublications(userId: String) {
     val userPublications = remember { mutableStateListOf<Publication>() }
     var nomUtilisateur by remember { mutableStateOf<String?>(null) }
 
-    // 🔹 Étape 1 : Récupérer le nom d'utilisateur de l'utilisateur connecté
+    //  Récupérer le nom d'utilisateur de l'utilisateur connecté
     LaunchedEffect(userId) {
         userDatabase.child("nomUtilisateur").get().addOnSuccessListener { snapshot ->
             val fetchedNomUtilisateur = snapshot.getValue(String::class.java)
@@ -298,7 +316,7 @@ fun UserPublications(userId: String) {
                 nomUtilisateur = fetchedNomUtilisateur
                 Log.d("UserPublications", "Nom utilisateur récupéré : $nomUtilisateur")
 
-                // 🔹 Étape 2 : Récupérer les publications de cet utilisateur et les trier
+                // Récupérer les publications de cet utilisateur et les trier
                 database.orderByChild("timestamp").addListenerForSingleValueEvent(object : ValueEventListener {
                     override fun onDataChange(snapshot: DataSnapshot) {
                         val fetchedPublications = mutableListOf<Publication>()
@@ -312,7 +330,7 @@ fun UserPublications(userId: String) {
                             }
                         }
 
-                        // ✅ Trier par ordre décroissant (plus récent en premier)
+                        // Trier par ordre décroissant
                         userPublications.clear()
                         userPublications.addAll(fetchedPublications.sortedByDescending { it.timestamp ?: 0 })
                     }
@@ -370,7 +388,7 @@ fun PublicationCard(publication: Publication) {
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Column(modifier = Modifier.background(Color.White)) {
-            // ✅ Image de la publication
+            // Image de la publication
             Box(modifier = Modifier.fillMaxWidth()) {
                 publication.imageUrl?.takeIf { it.isNotEmpty() }?.let { imageUrl ->
                     Image(
@@ -384,7 +402,7 @@ fun PublicationCard(publication: Publication) {
                     )
                 }
 
-                // ✅ Affichage du sport en bannière
+                // Affichage du sport en bannière
                 publication.sportType?.takeIf { it.isNotEmpty() }?.let { sport ->
                     Box(
                         modifier = Modifier
@@ -404,14 +422,14 @@ fun PublicationCard(publication: Publication) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ✅ Description
+            // Description
             Text(
                 text = publication.description,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
             )
 
-            // ✅ Affichage des champs optionnels
+            //  Affichage des champs optionnels
             publication.duration?.takeIf { it.isNotEmpty() }?.let { duration ->
                 Text(
                     text = "Durée: $duration min",
@@ -453,7 +471,7 @@ fun PublicationCard(publication: Publication) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ✅ Image de la publication avec icône de suppression
+            //  Image de la publication avec icône de suppression
             Box(modifier = Modifier.fillMaxWidth()) {
                 publication.imageUrl?.takeIf { it.isNotEmpty() }?.let { imageUrl ->
                     Image(
@@ -467,18 +485,17 @@ fun PublicationCard(publication: Publication) {
                     )
                 }
 
-                // ✅ Icône de la poubelle pour supprimer (visible seulement pour l'auteur)
-                //if (userId != null && publication.nomUtilisateur == userId) {
+                //  Icône de la poubelle pour supprimer
                    IconButton(
                         onClick = { deletePublication(database, publication.id, context) },
                         modifier = Modifier
-                            .align(Alignment.TopEnd) // 📌 Position en haut à droite
+                            .align(Alignment.TopEnd)
                             .padding(8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Delete, // ✅ Icône poubelle intégrée
+                            imageVector = Icons.Default.Delete,
                             contentDescription = "Supprimer",
-                            tint = Color.Red
+                            tint = Color.Black
                         )
                     }
                     }

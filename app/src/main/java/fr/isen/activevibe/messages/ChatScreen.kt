@@ -25,28 +25,28 @@ import fr.isen.activevibe.UserProfile
 @Composable
 fun ChatScreen(receiverName: String, onBack: () -> Unit) {
     val currentUser = FirebaseAuth.getInstance().currentUser
-    var currentUsername by remember { mutableStateOf("") } // ✅ Variable mutable
-    var messages by remember { mutableStateOf(emptyList<Message>()) }
+    var currentUsername by remember { mutableStateOf("") }
+    val messages = remember { mutableStateListOf<Message>() }
     var messageText by remember { mutableStateOf("") }
 
-    // 🔹 Charger le `nomUtilisateur` de l'utilisateur connecté
+    // 🔹 Récupérer `nomUtilisateur`
     LaunchedEffect(Unit) {
         val userId = currentUser?.uid ?: return@LaunchedEffect
         val userRef = FirebaseDatabase.getInstance().reference.child("users").child(userId)
 
         userRef.child("nomUtilisateur").get().addOnSuccessListener { snapshot ->
-            currentUsername = snapshot.value as? String ?: ""
-            Log.d("ChatDebug", "Nom utilisateur actuel récupéré : $currentUsername")
+            val fetchedUsername = snapshot.value as? String ?: ""
+            currentUsername = fetchedUsername
+            Log.d("ChatDebug", "Utilisateur actuel récupéré : $currentUsername")
 
-            // ✅ Une fois récupéré, on peut écouter les messages en direct
-            val conversationId = MessagesRepository.getConversationId(currentUsername, receiverName)
-            MessagesRepository.listenForMessages(conversationId) { messagesList ->
-                messages = messagesList
+            // ✅ Charger les messages en temps réel sans doublons
+            MessagesRepository.listenForMessages(fetchedUsername, receiverName) { messagesList ->
+                messages.clear()
+                messages.addAll(messagesList)
             }
         }
     }
 
-    // 🔹 UI du chat
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -59,10 +59,10 @@ fun ChatScreen(receiverName: String, onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // 🔹 Liste des messages
+        // ✅ Messages bien affichés avec alignement dynamique
         LazyColumn(
             modifier = Modifier.weight(1f).fillMaxWidth(),
-            reverseLayout = true // ✅ Affiche le dernier message en bas
+            reverseLayout = false // ✅ Les messages récents en bas
         ) {
             items(messages) { message ->
                 MessageBubble(
@@ -92,7 +92,6 @@ fun ChatScreen(receiverName: String, onBack: () -> Unit) {
             Button(
                 onClick = {
                     if (messageText.isNotEmpty()) {
-                        val conversationId = MessagesRepository.getConversationId(currentUsername, receiverName)
                         MessagesRepository.sendMessage(currentUsername, receiverName, messageText)
                         messageText = "" // ✅ Réinitialiser le champ après l'envoi
                     }
@@ -128,4 +127,3 @@ fun MessageBubble(message: Message, isMine: Boolean) {
         }
     }
 }
-

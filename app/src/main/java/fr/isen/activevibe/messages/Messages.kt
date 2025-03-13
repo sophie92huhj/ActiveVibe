@@ -42,28 +42,22 @@ object MessagesRepository {
     private val usersDatabase = FirebaseDatabase.getInstance().reference.child("users")
 
     fun getConversationId(user1: String, user2: String): String {
-        return if (user1 < user2) "${user1}_${user2}" else "${user2}_${user1}"
+        return "${user1}_$user2"
     }
 
     fun sendMessage(sender: String, receiver: String, text: String) {
-        val conversationId = getConversationId(sender, receiver)
-        val newMessageRef = database.child(conversationId).push()
-        val message = Message(sender, receiver, text, System.currentTimeMillis())
+        val timestamp = System.currentTimeMillis()
+        val message = Message(sender, receiver, text, timestamp)
 
-        newMessageRef.setValue(message)
-            .addOnSuccessListener { Log.d("MessagesRepository", "Message envoyé avec succès.") }
-            .addOnFailureListener { Log.e("MessagesRepository", "Erreur envoi message") }
+        // ✅ Créer deux conversations indépendantes sous "messages/"
+        val conversationA = database.child("${sender}_$receiver")
+        val conversationB = database.child("${receiver}_$sender")
 
-        val conversationRef = database.child("conversations").child(conversationId)
-        conversationRef.setValue(
-            Conversation(
-                conversationId = conversationId,
-                user1 = sender,
-                user2 = receiver,
-                lastMessage = text,
-                lastMessageTimestamp = System.currentTimeMillis()
-            )
-        )
+        // ✅ Sauvegarder dans `messages/userA_userB`
+        conversationA.push().setValue(message)
+
+        // ✅ Sauvegarder dans `messages/userB_userA`
+        conversationB.push().setValue(message)
     }
 
     fun getMessages(conversationId: String, onMessagesLoaded: (List<Message>) -> Unit) {
@@ -74,6 +68,7 @@ object MessagesRepository {
                     val message = child.getValue(Message::class.java)
                     if (message != null) messagesList.add(message)
                 }
+                messagesList.sortBy { it.timestamp } // Trie les messages par date
                 onMessagesLoaded(messagesList)
             }
 
@@ -83,14 +78,14 @@ object MessagesRepository {
         })
     }
 
-    fun getUserConversations(userName: String, onConversationsLoaded: (List<Conversation>) -> Unit) {
-        database.child("conversations").addListenerForSingleValueEvent(object : ValueEventListener {
+    fun getUserConversations(userName: String, onConversationsLoaded: (List<String>) -> Unit) {
+        database.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val conversationList = mutableListOf<Conversation>()
+                val conversationList = mutableListOf<String>()
                 for (child in snapshot.children) {
-                    val conversation = child.getValue(Conversation::class.java)
-                    if (conversation != null && (conversation.user1 == userName || conversation.user2 == userName)) {
-                        conversationList.add(conversation)
+                    val conversationId = child.key ?: continue
+                    if (conversationId.startsWith(userName)) { // ✅ Filtrer par utilisateur connecté
+                        conversationList.add(conversationId)
                     }
                 }
                 onConversationsLoaded(conversationList)
@@ -119,24 +114,40 @@ object MessagesRepository {
         })
     }
 
-    fun listenForMessages(conversationId: String, onMessagesUpdated: (List<Message>) -> Unit) {
-        val messagesRef = database.child(conversationId)
+    fun listenForMessages(currentUser: String, chatPartner: String, onMessagesUpdated: (List<Message>) -> Unit) {
+        val conversationId1 = "${currentUser}_$chatPartner"
+        val conversationId2 = "${chatPartner}_$currentUser"
 
-        messagesRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                val messagesList = mutableListOf<Message>()
-                for (child in snapshot.children) {
-                    val message = child.getValue(Message::class.java)
-                    if (message != null) messagesList.add(message)
+        val messagesRef1 = FirebaseDatabase.getInstance().reference.child("messages").child(conversationId1)
+        val messagesRef2 = FirebaseDatabase.getInstance().reference.child("messages").child(conversationId2)
+
+        val messagesList = mutableStateListOf<Message>()
+
+        val messageListener = object : ChildEventListener {
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                val message = snapshot.getValue(Message::class.java)
+
+                if (message != null && messagesList.none { it.timestamp == message.timestamp && it.text == message.text }) {
+                    // ✅ Ajout uniquement si le message n'existe pas déjà
+                    messagesList.add(message)
+                    messagesList.sortBy { it.timestamp } // ✅ Trie du plus ancien au plus récent
+                    onMessagesUpdated(messagesList.toList())
                 }
-                onMessagesUpdated(messagesList)
             }
 
+            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {}
+            override fun onChildRemoved(snapshot: DataSnapshot) {}
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
             override fun onCancelled(error: DatabaseError) {
                 Log.e("MessagesRepository", "Erreur récupération messages : ${error.message}")
             }
-        })
+        }
+
+        messagesRef1.addChildEventListener(messageListener) // ✅ Écoute messages envoyés
+        messagesRef2.addChildEventListener(messageListener) // ✅ Écoute messages reçus
     }
+
+
 
 
 }
@@ -145,14 +156,13 @@ object MessagesRepository {
 fun Message() {
     val currentUser = FirebaseAuth.getInstance().currentUser
     var currentUsername by remember { mutableStateOf("") }
-
-    var conversations by remember { mutableStateOf(emptyList<Conversation>()) }
+    var conversations by remember { mutableStateOf(emptyList<String>()) }
     var users by remember { mutableStateOf(emptyList<UserProfile>()) }
     var searchQuery by remember { mutableStateOf("") }
-    var showSearch by remember { mutableStateOf(false) } // ✅ Gère l'affichage de la recherche
-    var selectedChatUser by remember { mutableStateOf<String?>(null) } // ✅ Stocke l'utilisateur sélectionné
+    var showSearch by remember { mutableStateOf(false) }
+    var selectedChatUser by remember { mutableStateOf<String?>(null) }
 
-    // 🔹 Charger les conversations de l'utilisateur connecté
+    // 🔹 Charger l’utilisateur connecté et ses conversations
     LaunchedEffect(Unit) {
         val userId = currentUser?.uid ?: return@LaunchedEffect
         val userRef = FirebaseDatabase.getInstance().reference.child("users").child(userId)
@@ -160,21 +170,18 @@ fun Message() {
         userRef.child("nomUtilisateur").get().addOnSuccessListener { snapshot ->
             val fetchedUsername = snapshot.value as? String ?: ""
             currentUsername = fetchedUsername
-            Log.d("MessagesDebug", "Nom utilisateur récupéré : $currentUsername")
+            Log.d("MessagesDebug", "Utilisateur récupéré : $currentUsername")
 
-            // ✅ Charger toutes les conversations
             MessagesRepository.getUserConversations(fetchedUsername) { conversationList ->
-                conversations = conversationList.sortedByDescending { it.lastMessageTimestamp }
+                conversations = conversationList
             }
 
-            // ✅ Charger tous les utilisateurs pour la recherche
             MessagesRepository.getUsers { userList ->
                 users = userList.filter { it.nomUtilisateur != fetchedUsername }
             }
         }
     }
 
-    // ✅ Si un chat est sélectionné, on affiche uniquement le chat en **PLEIN ÉCRAN**
     selectedChatUser?.let { chatUser ->
         ChatScreen(receiverName = chatUser) { selectedChatUser = null }
         return
@@ -185,17 +192,12 @@ fun Message() {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // 🔹 Bouton pour rechercher un nouvel utilisateur
-        Button(
-            onClick = { showSearch = !showSearch },
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Button(onClick = { showSearch = !showSearch }, modifier = Modifier.fillMaxWidth()) {
             Text(if (showSearch) "Fermer la recherche" else "Nouvelle discussion")
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // ✅ Affichage de la recherche UNIQUEMENT si showSearch est activé
         if (showSearch) {
             OutlinedTextField(
                 value = searchQuery,
@@ -240,14 +242,14 @@ fun Message() {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // ✅ Liste des conversations récentes
         Text("Conversations récentes", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+
         if (conversations.isEmpty()) {
             Text("Aucune conversation pour le moment", color = Color.Gray, fontSize = 16.sp)
         } else {
             LazyColumn {
-                items(conversations) { conversation ->
-                    val chatPartnerName = if (conversation.user1 == currentUsername) conversation.user2 else conversation.user1
+                items(conversations) { conversationId ->
+                    val chatPartnerName = conversationId.split("_").last()
 
                     Row(
                         modifier = Modifier
@@ -272,10 +274,7 @@ fun Message() {
 
                         Spacer(modifier = Modifier.width(12.dp))
 
-                        Column {
-                            Text(text = chatPartnerName, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                            Text(text = conversation.lastMessage, fontSize = 14.sp, color = Color.Gray)
-                        }
+                        Text(text = chatPartnerName, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

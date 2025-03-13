@@ -88,7 +88,7 @@ fun PublicationCard(publication: Publication) {
     var commentText by remember { mutableStateOf("") }
     //var comments by remember { mutableStateOf(listOf<Pair<String, String>>()) }
     var expandedMenu by remember { mutableStateOf(false) }
-    var comments by remember { mutableStateOf<List<Pair<String, Pair<String, String>>>>(listOf()) } // Modifié ici
+    var comments by remember { mutableStateOf<List<Pair<String, String>>>(listOf()) } // Modifié ici
 
     LaunchedEffect(Unit) {
         userLikesRef.child(publication.id).addListenerForSingleValueEvent(object : ValueEventListener {
@@ -101,15 +101,13 @@ fun PublicationCard(publication: Publication) {
 
         commentsRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val fetchedComments = mutableListOf<Pair<String, Pair<String, String>>>()
+                val fetchedComments = mutableListOf<Pair<String, String>>()
                 for (child in snapshot.children) {
-                    val commentId = child.key ?: continue
                     val username = child.child("nomUtilisateur").getValue(String::class.java) ?: "Utilisateur inconnu"
                     val message = child.child("message").getValue(String::class.java) ?: ""
-                    fetchedComments.add(commentId to (username to message))
-                    // Ajoute l'ID du commentaire
+                    fetchedComments.add(username to message)
                 }
-                comments = fetchedComments // Mets à jour les commentaires dans l'état
+                comments = fetchedComments
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -289,7 +287,7 @@ fun PublicationCard(publication: Publication) {
 
                                     val newCommentRef = commentsRef.push()
                                     val commentData = mapOf(
-                                        "uid" to userId,
+                                        //"uid" to userId,
                                         "nomUtilisateur" to username,
                                         "message" to commentText
                                     )

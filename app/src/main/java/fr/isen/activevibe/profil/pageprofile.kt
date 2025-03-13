@@ -40,6 +40,8 @@ import java.util.Date
 import java.util.Locale
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import com.google.firebase.database.DatabaseReference
 
 @Composable
@@ -451,23 +453,39 @@ fun PublicationCard(publication: Publication) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ✅ Bouton Supprimer (Affiché uniquement pour l'utilisateur qui a posté)
-            val userId = FirebaseAuth.getInstance().currentUser?.uid
-            //if (userId != null && publication.nomUtilisateur == userId) {
-                Button(
-                    onClick = {
-                        deletePublication(database, publication.id, context)
-                    },
-                    colors = ButtonDefaults.buttonColors(Color.Red),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 4.dp)
-                ) {
-                    Text("Supprimer", color = Color.White)
+            // ✅ Image de la publication avec icône de suppression
+            Box(modifier = Modifier.fillMaxWidth()) {
+                publication.imageUrl?.takeIf { it.isNotEmpty() }?.let { imageUrl ->
+                    Image(
+                        painter = rememberAsyncImagePainter(imageUrl),
+                        contentDescription = "Image de la publication",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(250.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
+                // ✅ Icône de la poubelle pour supprimer (visible seulement pour l'auteur)
+                //if (userId != null && publication.nomUtilisateur == userId) {
+                   IconButton(
+                        onClick = { deletePublication(database, publication.id, context) },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd) // 📌 Position en haut à droite
+                            .padding(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete, // ✅ Icône poubelle intégrée
+                            contentDescription = "Supprimer",
+                            tint = Color.Red
+                        )
+                    }
+                    }
                 }
             }
-        }
     }
+
 
 
 fun deletePublication(database: DatabaseReference, publicationId: String, context: Context) {

@@ -1,5 +1,6 @@
 package fr.isen.activevibe.recherche
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,6 +36,12 @@ import fr.isen.activevibe.R
 import fr.isen.activevibe.UserProfile
 import fr.isen.activevibe.profil.GridPlaceholder
 import fr.isen.activevibe.profil.ProfileStat
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import fr.isen.activevibe.Publication
+import java.util.Date
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 
 data class UserItem(
@@ -169,7 +176,11 @@ fun RechercheScreen() {
 fun AutreProfilScreen(username: String, onBack: () -> Unit) {
     var userProfile by remember { mutableStateOf(UserProfile()) }
     val database = FirebaseDatabase.getInstance().reference.child("users")
+    val publicationsDatabase = FirebaseDatabase.getInstance().getReference("publications")
 
+    val userPublications = remember { mutableStateListOf<Publication>() } // Liste des publications complètes
+
+    // 🔹 Récupérer les informations de l'utilisateur
     LaunchedEffect(username) {
         database.orderByChild("nomUtilisateur").equalTo(username).get().addOnSuccessListener { snapshot ->
             if (snapshot.exists()) {
@@ -177,19 +188,29 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
                 userProfile = UserProfile(
                     profileImageUri = userSnapshot.child("profileImageUrl").getValue(String::class.java) ?: "",
                     nomUtilisateur = userSnapshot.child("nomUtilisateur").getValue(String::class.java) ?: "Non trouvé",
-                    nom = userSnapshot.child("nom").getValue(String::class.java) ?: "Nom inconnu",
-                    email = userSnapshot.child("email").getValue(String::class.java) ?: "Email non disponible",
-                    age = userSnapshot.child("age").getValue(String::class.java) ?: "",
-                    gender = userSnapshot.child("gender").getValue(String::class.java) ?: "",
-                    nationality = userSnapshot.child("nationality").getValue(String::class.java) ?: "",
-                    height = userSnapshot.child("height").getValue(String::class.java) ?: "",
-                    weight = userSnapshot.child("weight").getValue(String::class.java) ?: "",
-                    sport = userSnapshot.child("sport").getValue(String::class.java) ?: "",
-                    level = userSnapshot.child("level").getValue(String::class.java) ?: "",
-                    team = userSnapshot.child("team").getValue(String::class.java) ?: ""
+                    nom = userSnapshot.child("nom").getValue(String::class.java) ?: "Nom inconnu"
                 )
             }
         }
+
+        // 🔹 Charger toutes les publications de cet utilisateur
+        publicationsDatabase.orderByChild("nomUtilisateur").equalTo(username).addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val fetchedPublications = mutableListOf<Publication>()
+                for (child in snapshot.children) {
+                    val publication = child.getValue(Publication::class.java)
+                    if (publication != null) {
+                        fetchedPublications.add(publication)
+                    }
+                }
+                userPublications.clear()
+                userPublications.addAll(fetchedPublications.sortedByDescending { it.timestamp ?: 0 })
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("AutreProfilScreen", "Erreur chargement publications : ${error.message}")
+            }
+        })
     }
 
     Column(
@@ -197,12 +218,17 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
             .fillMaxSize()
             .padding(16.dp)
     ) {
+        // 🔙 Icône de retour
         Icon(
             imageVector = Icons.Default.ArrowBack,
             contentDescription = "Retour",
-            modifier = Modifier.size(32.dp).clickable { onBack() },
+            modifier = Modifier
+                .size(32.dp)
+                .clickable { onBack() },
             tint = Color.Black
         )
+
+        // 🖼️ Profil utilisateur (photo et nom)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
@@ -224,7 +250,7 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
                     )
                 } else {
                     Image(
-                        painter = painterResource(id = R.drawable.profile), // Image par défaut si pas d'URL
+                        painter = painterResource(id = R.drawable.profile),
                         contentDescription = "Photo de profil",
                         modifier = Modifier
                             .size(90.dp)
@@ -235,7 +261,6 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
             Spacer(modifier = Modifier.width(10.dp))
             Column {
                 Text(text = userProfile.nomUtilisateur, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-
             }
         }
 
@@ -243,24 +268,146 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
 
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(text = "À propos de moi", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-
         }
+
         Spacer(modifier = Modifier.height(15.dp))
 
+        // 📊 Statistiques
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceAround
         ) {
-            ProfileStat("9", "Posts")
+            ProfileStat(userPublications.size.toString(), "Posts")
             ProfileStat("673", "Abonnés")
             ProfileStat("710", "Abonnements")
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        GridPlaceholder()
+        // 📌 Affichage des publications sous forme de liste complète
+        UserPublicationsList(userPublications)
     }
+}
+
+@Composable
+fun UserPublicationsList(publications: List<Publication>) {
+    if (publications.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text = "Aucune publication trouvée", color = Color.Gray)
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(publications) { publication ->
+                PublicationCardWithoutDelete(publication)
+            }
+        }
     }
+}
 
+@Composable
+fun PublicationCardWithoutDelete(publication: Publication) {
+    Card(
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        Column(modifier = Modifier.background(Color.White)) {
+            // ✅ Affichage du sport en bannière
+            publication.sportType?.takeIf { it.isNotEmpty() }?.let { sport ->
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xff433af1), shape = RoundedCornerShape(topStart = 8.dp, bottomEnd = 8.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = sport,
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
 
+            Spacer(modifier = Modifier.height(8.dp))
 
+            // ✅ Afficher l'image uniquement si elle existe
+            publication.imageUrl?.takeIf { it.isNotEmpty() }?.let { imageUrl ->
+                Image(
+                    painter = rememberAsyncImagePainter(imageUrl),
+                    contentDescription = "Image de la publication",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // ✅ Ajout d'un fond coloré pour les posts sans image (optionnel)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White) // 🌟 Fond violet clair pour un meilleur rendu
+                    .padding(12.dp)
+            ) {
+                Column {
+                    // ✅ Description
+                    Text(
+                        text = publication.description,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    // ✅ Affichage des champs optionnels
+                    publication.duration?.takeIf { it.isNotEmpty() }?.let { duration ->
+                        Text(
+                            text = "Durée: $duration min",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+
+                    publication.distance?.takeIf { it.isNotEmpty() }?.let { distance ->
+                        Text(
+                            text = "Distance: $distance km",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+
+                    publication.speed?.takeIf { it.isNotEmpty() }?.let { speed ->
+                        Text(
+                            text = "Vitesse: $speed km/h",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+
+                    publication.timestamp?.let { timestamp ->
+                        val date = Date(timestamp)
+                        val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                        val formattedDate = formatter.format(date)
+                        Text(
+                            text = "Publié le : $formattedDate",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

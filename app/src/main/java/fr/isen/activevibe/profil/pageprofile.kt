@@ -186,10 +186,10 @@ fun ProfileScreen(onEditClick: () -> Unit) {
                     containerColor = Color(0xFFE0E0E0),
                     contentColor = Color(0xFF424242)
                 ),
-                shape = CircleShape, // Forme ronde
+                shape = CircleShape,
                 modifier = Modifier
-                    .wrapContentWidth() // Largeur ajustée automatiquement
-                    .height(40.dp) // Hauteur de 40.dp
+                    .wrapContentWidth()
+                    .height(40.dp)
             ) {
                 Text(
                     text = "Éditer le profil",
@@ -232,7 +232,7 @@ fun ProfileScreen(onEditClick: () -> Unit) {
             ),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
-                .align(Alignment.TopEnd) // Alignement du bouton en haut à droite
+                .align(Alignment.TopEnd)
                 .padding(16.dp)
         ) {
             Text(
@@ -300,9 +300,15 @@ fun UserPublications(userId: String) {
 
     val userPublications = remember { mutableStateListOf<Publication>() }
     var nomUtilisateur by remember { mutableStateOf<String?>(null) }
+    var refreshTrigger by remember { mutableStateOf(0) }
+
+    fun refreshPublications() {
+        refreshTrigger++ // 🔄 Incrémente la valeur pour forcer une recomposition
+    }
+
 
     //  Récupérer le nom d'utilisateur de l'utilisateur connecté
-    LaunchedEffect(userId) {
+    LaunchedEffect(userId, refreshTrigger) {
         userDatabase.child("nomUtilisateur").get().addOnSuccessListener { snapshot ->
             val fetchedNomUtilisateur = snapshot.getValue(String::class.java)
             if (fetchedNomUtilisateur != null) {
@@ -361,7 +367,7 @@ fun UserPublications(userId: String) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(userPublications) { publication ->
-                    PublicationCard(publication)
+                    PublicationCard(publication, :: refreshPublications)
                 }
             }
         }
@@ -369,7 +375,7 @@ fun UserPublications(userId: String) {
 }
 
 @Composable
-fun PublicationCard(publication: Publication) {
+fun PublicationCard(publication: Publication, refreshPublications: () -> Unit) {
     val database = FirebaseDatabase.getInstance().getReference("publications")
     val context = LocalContext.current
 
@@ -414,7 +420,7 @@ fun PublicationCard(publication: Publication) {
 
                 // Icône de suppression
                 IconButton(
-                    onClick = { deletePublication(database, publication.id, context) },
+                    onClick = { deletePublication(database, publication.id, context, refreshPublications) },
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(8.dp)
@@ -478,33 +484,7 @@ fun PublicationCard(publication: Publication) {
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-/*
-            //  Image de la publication avec icône de suppression
-            Box(modifier = Modifier.fillMaxWidth()) {
-                publication.imageUrl?.takeIf { it.isNotEmpty() }?.let { imageUrl ->
-                    Image(
-                        painter = rememberAsyncImagePainter(imageUrl),
-                        contentDescription = "Image de la publication",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(250.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                }*/
-/*
-                //  Icône de la poubelle pour supprimer
-                IconButton(
-                    onClick = { deletePublication(database, publication.id, context) },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Supprimer",
-                        tint = Color.Black
-                    )*/
+
                 }
             }
         }
@@ -513,11 +493,12 @@ fun PublicationCard(publication: Publication) {
 
 
 
-fun deletePublication(database: DatabaseReference, publicationId: String, context: Context) {
+fun deletePublication(database: DatabaseReference, publicationId: String, context: Context, refreshPublications: () -> Unit) {
     if (publicationId.isNotEmpty()) {
         database.child(publicationId).removeValue()
             .addOnSuccessListener {
                 Toast.makeText(context, "Publication supprimée", Toast.LENGTH_SHORT).show()
+                refreshPublications() // Rafraîchir après suppression
             }
             .addOnFailureListener {
                 Toast.makeText(context, "Erreur lors de la suppression", Toast.LENGTH_SHORT).show()

@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -17,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -33,7 +35,6 @@ import com.google.android.gms.common.api.ApiException
 import fr.isen.activevibe.connexion.AlreadyConnectedScreen
 import fr.isen.activevibe.connexion.FirstTimeScreen
 import fr.isen.activevibe.connexion.ForgotPasswordScreen
-
 
 class ConnexionActivity : ComponentActivity() {
 
@@ -155,6 +156,13 @@ fun CustomAuthScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) } // 🔹 Gère l'affichage du mot de passe
 
+    Image(
+        painter = painterResource(id = R.drawable.sport), // Assure-toi que l’image est bien dans `res/drawable`
+        contentDescription = "Fond d'écran",
+        modifier = Modifier.fillMaxSize(),
+        contentScale = ContentScale.Crop
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -170,86 +178,102 @@ fun CustomAuthScreen(
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        // ✅ Logo
-        Image(
-            painter = painterResource(id = R.drawable.logo),
-            contentDescription = "Logo ActiveVibe",
-            modifier = Modifier
-                .size(250.dp)
-                .padding(bottom = 8.dp)
-        )
+            // ✅ Logo
+            Image(
+                painter = painterResource(id = R.drawable.logo),
+                contentDescription = "Logo ActiveVibe",
+                modifier = Modifier
+                    .size(250.dp)
+                    .padding(bottom = 8.dp)
+            )
 
-        // ✅ Texte "Connexion"
-        Text(
-            text = "Connexion / Inscription",
-            fontSize = 26.sp,
-            color = Color(0xFF433AF1),
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
+            Text(
+                text = "Connexion / Inscription",
+                fontSize = 26.sp,
+                color = Color.Black, // ✅ Texte en blanc
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
 
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth()
-        )
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email", color = Color.Black) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color.Black, // ✅ Texte noir
+                    cursorColor = Color.Black,
+                    focusedIndicatorColor = Color.Black,
+                    unfocusedIndicatorColor = Color.Gray,
+                    focusedLabelColor = Color.Black,
+                    unfocusedLabelColor = Color.Black
+                )
+            )
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-        // 🔹 Champ de mot de passe avec visibilité activable
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Mot de passe") },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(
-                        imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                        contentDescription = if (passwordVisible) "Masquer le mot de passe" else "Afficher le mot de passe"
-                    )
-                }
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Mot de passe", color = Color.Black) },
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                            contentDescription = if (passwordVisible) "Masquer le mot de passe" else "Afficher le mot de passe"
+                        )
+                    }
+                },
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color.Black, // ✅ Texte noir
+                    cursorColor = Color.Black,
+                    focusedIndicatorColor = Color.Black,
+                    unfocusedIndicatorColor = Color.Gray,
+                    focusedLabelColor = Color.Black,
+                    unfocusedLabelColor = Color.Black
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ✅ Bouton Connexion Email
+            Button(
+                onClick = { onEmailLoginClicked(email, password) },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF433AF1)),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .clip(RoundedCornerShape(10.dp))
+            ) {
+                Text(text = "Se connecter avec une adresse e-mail", color = Color.White)
             }
-        )
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-        // ✅ Bouton Connexion Email
-        Button(
-            onClick = { onEmailLoginClicked(email, password) },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF433AF1)),
-            shape = RoundedCornerShape(10.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .clip(RoundedCornerShape(10.dp))
-        ) {
-            Text(text = "Se connecter avec une adresse e-mail", color = Color.White)
-        }
+            // ✅ Bouton Connexion Google
+            Button(
+                onClick = { onGoogleLoginClicked() },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5A5A5A)),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .clip(RoundedCornerShape(10.dp))
+            ) {
+                Text(text = "Se connecter avec Google", color = Color.White)
+            }
 
-        Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-        // ✅ Bouton Connexion Google
-        Button(
-            onClick = { onGoogleLoginClicked() },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5A5A5A)),
-            shape = RoundedCornerShape(10.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .clip(RoundedCornerShape(10.dp))
-        ) {
-            Text(text = "Se connecter avec Google", color = Color.White)
-        }
-
-        // ✅ Bouton "Mot de passe oublié ?"
-        TextButton(
-            onClick = { onResetPasswordClicked(email) },
-            modifier = Modifier.padding(top = 8.dp)
-        ) {
-            Text(text = "Mot de passe oublié ?", color = Color(0xFF433AF1))
+            // ✅ Bouton "Mot de passe oublié ?"
+            TextButton(
+                onClick = { onResetPasswordClicked(email) },
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                Text(text = "Mot de passe oublié ?", color = Color.Black)
+            }
         }
     }
-}
 

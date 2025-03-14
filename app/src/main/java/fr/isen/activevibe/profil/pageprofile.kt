@@ -227,8 +227,8 @@ fun ProfileScreen(onEditClick: () -> Unit) {
                 context.startActivity(intent)
             },
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFDD2C00),
-                contentColor = Color.White
+                containerColor = Color(0x77FF3C3C),
+                contentColor = Color.Black
             ),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier

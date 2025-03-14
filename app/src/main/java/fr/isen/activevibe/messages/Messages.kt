@@ -80,17 +80,26 @@ object MessagesRepository {
         })
     }
 
-    fun getUserConversations(userName: String, onConversationsLoaded: (List<String>) -> Unit) {
+    fun getUserConversations(userName: String, onConversationsLoaded: (List<Pair<String, Long>>) -> Unit) {
         database.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val conversationList = mutableListOf<String>()
+                val conversationList = mutableListOf<Pair<String, Long>>() // ✅ Liste avec ID de conversation + timestamp du dernier message
+
                 for (child in snapshot.children) {
                     val conversationId = child.key ?: continue
                     if (conversationId.startsWith(userName)) { // ✅ Filtrer par utilisateur connecté
-                        conversationList.add(conversationId)
+                        val lastMessageTimestamp = child.children.mapNotNull {
+                            it.child("timestamp").getValue(Long::class.java)
+                        }.maxOrNull() ?: 0 // ✅ Récupérer le dernier message (ou 0 si aucun)
+
+                        conversationList.add(Pair(conversationId, lastMessageTimestamp))
                     }
                 }
-                onConversationsLoaded(conversationList)
+
+                // ✅ Trier par dernier message (du plus récent au plus ancien)
+                val sortedConversations = conversationList.sortedByDescending { it.second }
+
+                onConversationsLoaded(sortedConversations)
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -98,6 +107,7 @@ object MessagesRepository {
             }
         })
     }
+
 
     fun getUsers(onUsersLoaded: (List<UserProfile>) -> Unit) {
         usersDatabase.addListenerForSingleValueEvent(object : ValueEventListener {
@@ -194,7 +204,7 @@ fun Message() {
             Log.d("MessagesDebug", "Utilisateur récupéré : $currentUsername")
 
             MessagesRepository.getUserConversations(fetchedUsername) { conversationList ->
-                conversations = conversationList
+                conversations = conversationList.map { it.first } // ✅ Extraire uniquement l’ID de conversation
             }
 
             MessagesRepository.getUsers { userList ->
@@ -202,6 +212,7 @@ fun Message() {
             }
         }
     }
+
 
     selectedChatUser?.let { chatUser ->
         ChatScreen(receiverName = chatUser) { selectedChatUser = null }
@@ -238,8 +249,18 @@ fun Message() {
             Spacer(modifier = Modifier.height(10.dp))
 
             val filteredUsers = users.filter { it.nomUtilisateur.contains(searchQuery, ignoreCase = true) }
+
             LazyColumn {
                 items(filteredUsers) { user ->
+                    var profileImageUrl by remember { mutableStateOf<String?>(null) }
+
+                    // ✅ Charger l'image de profil pour chaque utilisateur
+                    LaunchedEffect(user.nomUtilisateur) {
+                        MessagesRepository.getProfileImageUrl(user.nomUtilisateur) { url ->
+                            profileImageUrl = url
+                        }
+                    }
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -247,6 +268,7 @@ fun Message() {
                             .clickable { selectedChatUser = user.nomUtilisateur; showSearch = false },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // ✅ Afficher la photo de profil si disponible
                         Box(
                             modifier = Modifier
                                 .size(50.dp)
@@ -254,11 +276,19 @@ fun Message() {
                                 .background(Color.Gray),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = user.nomUtilisateur.first().toString().uppercase(),
-                                color = Color.White,
-                                fontSize = 20.sp
-                            )
+                            if (!profileImageUrl.isNullOrEmpty()) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(profileImageUrl),
+                                    contentDescription = "Photo de profil",
+                                    modifier = Modifier.size(50.dp)
+                                )
+                            } else {
+                                Text(
+                                    text = user.nomUtilisateur.first().toString().uppercase(),
+                                    color = Color.White,
+                                    fontSize = 20.sp
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.width(12.dp))
@@ -268,6 +298,7 @@ fun Message() {
                 }
             }
         }
+
 
         Spacer(modifier = Modifier.height(10.dp))
 

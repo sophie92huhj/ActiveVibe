@@ -48,7 +48,7 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
     var speed by remember { mutableStateOf("") }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var expanded by remember { mutableStateOf(false) }
-    val sports = listOf("Course à pied", "Tennis", "Rugby", "Natation", "Autre")
+    val sports = listOf("Course à pied", "Tennis", "Rugby", "Natation", "Basket", "Volley", "Repas", "Musculation", "Autre")
 
     val database = FirebaseDatabase.getInstance().getReference("publications")
 
@@ -59,7 +59,7 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()) // Permet le défilement vertical
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

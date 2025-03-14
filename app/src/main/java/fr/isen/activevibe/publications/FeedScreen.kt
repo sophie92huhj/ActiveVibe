@@ -34,27 +34,27 @@ import fr.isen.activevibe.R
 fun FeedScreen(modifier: Modifier = Modifier) {
     val database = FirebaseDatabase.getInstance().getReference("publications")
     val publications = remember { mutableStateListOf<Publication>() }
-    var selectedSport by remember { mutableStateOf<String?>(null) } // Sport sélectionné
-    var sportList by remember { mutableStateOf<List<String>>(emptyList()) } // Liste des sports disponibles
-    var expanded by remember { mutableStateOf(false) } // Gérer l'affichage du menu déroulant
+    var selectedSport by remember { mutableStateOf<String?>(null) }
+    var sportList by remember { mutableStateOf<List<String>>(emptyList()) }
+    var expanded by remember { mutableStateOf(false) }
 
     // 🔹 Charger les publications et extraire les sports disponibles
     LaunchedEffect(Unit) {
         database.orderByChild("timestamp").addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val fetchedPublications = mutableListOf<Publication>()
-                val sportsSet = mutableSetOf<String>() // Pour stocker les sports uniques
+                val sportsSet = mutableSetOf<String>()
 
                 for (child in snapshot.children.reversed()) {
                     val pub = child.getValue(Publication::class.java)
                     if (pub != null) {
                         fetchedPublications.add(pub)
-                        pub.sportType?.let { sportsSet.add(it) } // Ajout du sport dans la liste unique
+                        pub.sportType?.let { sportsSet.add(it) }
                     }
                 }
                 publications.clear()
                 publications.addAll(fetchedPublications)
-                sportList = sportsSet.toList().sorted() // Trier les sports alphabétiquement
+                sportList = sportsSet.toList().sorted()
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -64,14 +64,14 @@ fun FeedScreen(modifier: Modifier = Modifier) {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // 🔹 Filtre par sport
+        //  Filtre par sport
         if (sportList.isNotEmpty()) {
             Box(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
                 Button(
                     onClick = { expanded = true },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF433AF1), // Couleur de fond du bouton
-                        contentColor = Color.White // Couleur du texte
+                        containerColor = Color(0xFF433AF1),
+                        contentColor = Color.White
                     )
                 ) {
                     Text(text = selectedSport ?: "Filtrer par sport")
@@ -81,7 +81,7 @@ fun FeedScreen(modifier: Modifier = Modifier) {
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
-                    // ✅ Option "Tous les sports"
+                    //  Option "Tous les sports"
                     DropdownMenuItem(
                         text = { Text("Tous les sports") },
                         onClick = {
@@ -90,7 +90,7 @@ fun FeedScreen(modifier: Modifier = Modifier) {
                         }
                     )
 
-                    // ✅ Ajouter tous les sports disponibles
+                    // Ajouter tous les sports disponibles
                     sportList.forEach { sport ->
                         DropdownMenuItem(
                             text = { Text(sport) },
@@ -104,7 +104,7 @@ fun FeedScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        // ✅ Affichage des publications filtrées
+        // Affichage des publications filtrées
         val filteredPublications = if (selectedSport == null) publications else publications.filter { it.sportType == selectedSport }
 
         if (filteredPublications.isEmpty()) {
@@ -236,7 +236,7 @@ fun PublicationCard(publication: Publication) {
                     fontSize = 16.sp
                 )
 
-                Spacer(modifier = Modifier.weight(1f)) // Pousse les options vers la droite
+                Spacer(modifier = Modifier.weight(1f))
 
                 IconButton(onClick = { expandedMenu = !expandedMenu }) {
                     Icon(Icons.Default.MoreVert, contentDescription = "Options")
@@ -256,7 +256,7 @@ fun PublicationCard(publication: Publication) {
                 }
             }
 
-            // 🔹 IMAGE + SPORT EN HAUT À DROITE
+            //  IMAGE + SPORT EN HAUT À DROITE
             Box(modifier = Modifier.fillMaxWidth()) {
                 publication.imageUrl?.takeIf { it.isNotEmpty() }?.let { imageUrl ->
                     Image(
@@ -282,14 +282,14 @@ fun PublicationCard(publication: Publication) {
                 }
             }
 
-            // 🔹 DESCRIPTION
+            //  DESCRIPTION
             Text(
                 text = publication.description,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
             )
 
-            // 🔹 INFOS SUPPLÉMENTAIRES (Distance, Durée, Vitesse)
+            //  INFOS SUPPLÉMENTAIRES (Distance, Durée, Vitesse)
             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
                 publication.distance?.takeIf { it.isNotEmpty() }?.let { distance ->
                     Text(text = "Distance : $distance km", fontSize = 12.sp, color = Color.Gray)
@@ -302,7 +302,7 @@ fun PublicationCard(publication: Publication) {
                 }
             }
 
-            // 🔹 BARRE D'ACTIONS (LIKE, COMMENTAIRE)
+            //  BARRE D'ACTIONS (LIKE, COMMENTAIRE)
             Row(
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
                 horizontalArrangement = Arrangement.Start
@@ -326,7 +326,7 @@ fun PublicationCard(publication: Publication) {
                 }
             }
 
-            // 🔹 CHAMP DE COMMENTAIRE
+            //  CHAMP DE COMMENTAIRE
             if (showCommentInput) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     OutlinedTextField(

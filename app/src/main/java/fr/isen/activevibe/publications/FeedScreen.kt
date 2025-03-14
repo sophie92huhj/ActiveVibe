@@ -88,7 +88,8 @@ fun PublicationCard(publication: Publication) {
     var commentText by remember { mutableStateOf("") }
     //var comments by remember { mutableStateOf(listOf<Pair<String, String>>()) }
     var expandedMenu by remember { mutableStateOf(false) }
-    var comments by remember { mutableStateOf<List<Pair<String, String>>>(listOf()) } // Modifié ici
+    var comments by remember { mutableStateOf<List<Triple<String, String, String>>>(listOf()) }
+
 
     LaunchedEffect(Unit) {
         userLikesRef.child(publication.id).addListenerForSingleValueEvent(object : ValueEventListener {
@@ -101,11 +102,12 @@ fun PublicationCard(publication: Publication) {
 
         commentsRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val fetchedComments = mutableListOf<Pair<String, String>>()
+                val fetchedComments = mutableListOf<Triple<String, String, String>>() // Stocke (id, username, message)
                 for (child in snapshot.children) {
+                    val commentId = child.key ?: continue // L'ID du commentaire dans Firebase
                     val username = child.child("nomUtilisateur").getValue(String::class.java) ?: "Utilisateur inconnu"
                     val message = child.child("message").getValue(String::class.java) ?: ""
-                    fetchedComments.add(username to message)
+                    fetchedComments.add(Triple(commentId, username, message)) // Ajoute l'ID Firebase
                 }
                 comments = fetchedComments
             }
@@ -134,11 +136,9 @@ fun PublicationCard(publication: Publication) {
 
 
     fun deleteComment(commentId: String) {
-        // Suppression du commentaire dans la base de données Firebase
         commentsRef.child(commentId).removeValue().addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                // Mise à jour de l'état local des commentaires pour supprimer le commentaire
-                comments = comments.filterNot { it.first == commentId } // Filtrer le commentaire supprimé
+                comments = comments.filterNot { it.first == commentId } // Supprime localement aussi
                 Log.d("FeedScreen", "Commentaire supprimé avec succès.")
             } else {
                 Log.e("FeedScreen", "Erreur lors de la suppression du commentaire.")
@@ -306,16 +306,15 @@ fun PublicationCard(publication: Publication) {
             }
 
 
-            if (comments.isNotEmpty()) {
+           if (comments.isNotEmpty()) {
                 Column(modifier = Modifier.padding(horizontal = 12.dp)) {
 
-                    val commentsList = comments.toList()
-                    commentsList.forEachIndexed { index, (username, message) ->
+                   // val commentsList = comments.toList()
+                    comments.forEach { (commentId, username, message) ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-
                             Text(
                                 text = "$username : $message",
                                 fontSize = 14.sp,
@@ -323,21 +322,17 @@ fun PublicationCard(publication: Publication) {
                                 color = Color.Black,
                                 modifier = Modifier.weight(1f)
                             )
-
-
-                            // Récupère l'ID du commentaire (commentId) à partir de la liste des commentaires
-                            val commentId = commentsList.getOrNull(index)?.first
-                            if (commentId != null) {
-                                // Permet à tout le monde de supprimer un commentaire en cliquant sur l'icône de suppression
-                                IconButton(onClick = { deleteComment(commentId) }) {
-                                    Icon(Icons.Filled.Delete, contentDescription = "Supprimer", tint = Color.Black)
-                                }
+                            IconButton(onClick = { deleteComment(commentId) }) {
+                                Icon(Icons.Filled.Delete, contentDescription = "Supprimer", tint = Color.Black)
+                            }
+                        }
+                    }
 
                             }
                         }
                     }
                 }
             }
-        }
-    }
-}
+
+
+

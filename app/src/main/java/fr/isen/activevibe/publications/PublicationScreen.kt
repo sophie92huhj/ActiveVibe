@@ -57,7 +57,10 @@ fun PublicationScreen(modifier: Modifier = Modifier) {
     ) { uri: Uri? -> imageUri = uri }
 
     Column(
-        modifier = modifier.fillMaxSize().padding(24.dp),
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()) // Permet le défilement vertical
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 

@@ -44,6 +44,7 @@ fun LikeScreen(navController: NavController, modifier: Modifier = Modifier) {
                                 fetchedPublications.add(pub)
                             }
                         }
+                        fetchedPublications.sortByDescending { it.timestamp }
                         likedPublications.clear()
                         likedPublications.addAll(fetchedPublications)
                     }

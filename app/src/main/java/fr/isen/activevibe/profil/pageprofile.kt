@@ -379,9 +379,9 @@ fun PublicationCard(publication: Publication) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 8.dp)
-    ) {
+    ){
         Column(modifier = Modifier.background(Color.White)) {
-            // Image de la publication
+// Affichage de l'image avec l'icône de suppression
             Box(modifier = Modifier.fillMaxWidth()) {
                 publication.imageUrl?.takeIf { it.isNotEmpty() }?.let { imageUrl ->
                     Image(
@@ -395,7 +395,7 @@ fun PublicationCard(publication: Publication) {
                     )
                 }
 
-                // Affichage du sport en bannière
+                // Bannière de sport
                 publication.sportType?.takeIf { it.isNotEmpty() }?.let { sport ->
                     Box(
                         modifier = Modifier
@@ -411,7 +411,22 @@ fun PublicationCard(publication: Publication) {
                         )
                     }
                 }
+
+                // Icône de suppression
+                IconButton(
+                    onClick = { deletePublication(database, publication.id, context) },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Supprimer",
+                        tint = Color.Black
+                    )
+                }
             }
+
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -463,7 +478,7 @@ fun PublicationCard(publication: Publication) {
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-
+/*
             //  Image de la publication avec icône de suppression
             Box(modifier = Modifier.fillMaxWidth()) {
                 publication.imageUrl?.takeIf { it.isNotEmpty() }?.let { imageUrl ->
@@ -476,8 +491,8 @@ fun PublicationCard(publication: Publication) {
                             .clip(RoundedCornerShape(8.dp)),
                         contentScale = ContentScale.Crop
                     )
-                }
-
+                }*/
+/*
                 //  Icône de la poubelle pour supprimer
                 IconButton(
                     onClick = { deletePublication(database, publication.id, context) },
@@ -489,12 +504,12 @@ fun PublicationCard(publication: Publication) {
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Supprimer",
                         tint = Color.Black
-                    )
+                    )*/
                 }
             }
         }
-    }
-}
+
+
 
 
 

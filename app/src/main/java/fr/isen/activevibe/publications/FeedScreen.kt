@@ -34,20 +34,27 @@ import fr.isen.activevibe.R
 fun FeedScreen(modifier: Modifier = Modifier) {
     val database = FirebaseDatabase.getInstance().getReference("publications")
     val publications = remember { mutableStateListOf<Publication>() }
+    var selectedSport by remember { mutableStateOf<String?>(null) } // Sport sélectionné
+    var sportList by remember { mutableStateOf<List<String>>(emptyList()) } // Liste des sports disponibles
+    var expanded by remember { mutableStateOf(false) } // Gérer l'affichage du menu déroulant
 
+    // 🔹 Charger les publications et extraire les sports disponibles
     LaunchedEffect(Unit) {
         database.orderByChild("timestamp").addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val fetchedPublications = mutableListOf<Publication>()
+                val sportsSet = mutableSetOf<String>() // Pour stocker les sports uniques
+
                 for (child in snapshot.children.reversed()) {
                     val pub = child.getValue(Publication::class.java)
                     if (pub != null) {
                         fetchedPublications.add(pub)
-                        Log.d("FirebaseDebug", "Publication récupérée: ${pub.nomUtilisateur}")
+                        pub.sportType?.let { sportsSet.add(it) } // Ajout du sport dans la liste unique
                     }
                 }
                 publications.clear()
                 publications.addAll(fetchedPublications)
+                sportList = sportsSet.toList().sorted() // Trier les sports alphabétiquement
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -57,7 +64,50 @@ fun FeedScreen(modifier: Modifier = Modifier) {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        if (publications.isEmpty()) {
+        // 🔹 Filtre par sport
+        if (sportList.isNotEmpty()) {
+            Box(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                Button(
+                    onClick = { expanded = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF433AF1), // Couleur de fond du bouton
+                        contentColor = Color.White // Couleur du texte
+                    )
+                ) {
+                    Text(text = selectedSport ?: "Filtrer par sport")
+                }
+
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    // ✅ Option "Tous les sports"
+                    DropdownMenuItem(
+                        text = { Text("Tous les sports") },
+                        onClick = {
+                            selectedSport = null
+                            expanded = false
+                        }
+                    )
+
+                    // ✅ Ajouter tous les sports disponibles
+                    sportList.forEach { sport ->
+                        DropdownMenuItem(
+                            text = { Text(sport) },
+                            onClick = {
+                                selectedSport = sport
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        // ✅ Affichage des publications filtrées
+        val filteredPublications = if (selectedSport == null) publications else publications.filter { it.sportType == selectedSport }
+
+        if (filteredPublications.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -69,13 +119,14 @@ fun FeedScreen(modifier: Modifier = Modifier) {
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(publications) { publication ->
+                items(filteredPublications) { publication ->
                     PublicationCard(publication)
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun PublicationCard(publication: Publication) {
@@ -86,10 +137,8 @@ fun PublicationCard(publication: Publication) {
     var isLiked by remember { mutableStateOf(false) }
     var showCommentInput by remember { mutableStateOf(false) }
     var commentText by remember { mutableStateOf("") }
-    //var comments by remember { mutableStateOf(listOf<Pair<String, String>>()) }
     var expandedMenu by remember { mutableStateOf(false) }
     var comments by remember { mutableStateOf<List<Triple<String, String, String>>>(listOf()) }
-
 
     LaunchedEffect(Unit) {
         userLikesRef.child(publication.id).addListenerForSingleValueEvent(object : ValueEventListener {
@@ -102,12 +151,12 @@ fun PublicationCard(publication: Publication) {
 
         commentsRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val fetchedComments = mutableListOf<Triple<String, String, String>>() // Stocke (id, username, message)
+                val fetchedComments = mutableListOf<Triple<String, String, String>>()
                 for (child in snapshot.children) {
-                    val commentId = child.key ?: continue // L'ID du commentaire dans Firebase
+                    val commentId = child.key ?: continue
                     val username = child.child("nomUtilisateur").getValue(String::class.java) ?: "Utilisateur inconnu"
                     val message = child.child("message").getValue(String::class.java) ?: ""
-                    fetchedComments.add(Triple(commentId, username, message)) // Ajoute l'ID Firebase
+                    fetchedComments.add(Triple(commentId, username, message))
                 }
                 comments = fetchedComments
             }
@@ -166,10 +215,9 @@ fun PublicationCard(publication: Publication) {
     ) {
         Column(modifier = Modifier.background(Color.White)) {
 
+            // 🔹 HEADER AVEC NOM + PHOTO
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
+                modifier = Modifier.fillMaxWidth().padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
@@ -188,11 +236,11 @@ fun PublicationCard(publication: Publication) {
                     fontSize = 16.sp
                 )
 
+                Spacer(modifier = Modifier.weight(1f)) // Pousse les options vers la droite
 
                 IconButton(onClick = { expandedMenu = !expandedMenu }) {
                     Icon(Icons.Default.MoreVert, contentDescription = "Options")
                 }
-
 
                 DropdownMenu(
                     expanded = expandedMenu,
@@ -201,52 +249,62 @@ fun PublicationCard(publication: Publication) {
                     DropdownMenuItem(
                         text = { Text("Supprimer tous les commentaires") },
                         onClick = {
-                            deleteAllComments()
+                            commentsRef.removeValue()
                             expandedMenu = false
                         }
                     )
                 }
             }
 
-            // Image de la publication
-            publication.imageUrl?.let { imageUrl ->
-                if (imageUrl.isNotEmpty()) {
+            // 🔹 IMAGE + SPORT EN HAUT À DROITE
+            Box(modifier = Modifier.fillMaxWidth()) {
+                publication.imageUrl?.takeIf { it.isNotEmpty() }?.let { imageUrl ->
                     Image(
                         painter = rememberAsyncImagePainter(imageUrl),
                         contentDescription = "Image de la publication",
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(400.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
                     )
+                }
+
+                publication.sportType?.takeIf { it.isNotEmpty() }?.let { sport ->
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .background(Color(0xff433af1), shape = RoundedCornerShape(bottomStart = 8.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(text = sport, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
-            //  Afficher le type de sport
-            publication.sportType?.let { sport ->
-                Text(
-                    text = "$sport",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                )
-            }
-
-            // Description de la publication
+            // 🔹 DESCRIPTION
             Text(
                 text = publication.description,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
             )
 
+            // 🔹 INFOS SUPPLÉMENTAIRES (Distance, Durée, Vitesse)
+            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
+                publication.distance?.takeIf { it.isNotEmpty() }?.let { distance ->
+                    Text(text = "Distance : $distance km", fontSize = 12.sp, color = Color.Gray)
+                }
+                publication.duration?.takeIf { it.isNotEmpty() }?.let { duration ->
+                    Text(text = "Durée : $duration min", fontSize = 12.sp, color = Color.Gray)
+                }
+                publication.speed?.takeIf { it.isNotEmpty() }?.let { speed ->
+                    Text(text = "Vitesse : $speed km/h", fontSize = 12.sp, color = Color.Gray)
+                }
+            }
 
-
-            // Barre d'actions (Like, Commentaire)
+            // 🔹 BARRE D'ACTIONS (LIKE, COMMENTAIRE)
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
+                modifier = Modifier.fillMaxWidth().padding(12.dp),
                 horizontalArrangement = Arrangement.Start
             ) {
                 IconButton(onClick = {
@@ -268,7 +326,7 @@ fun PublicationCard(publication: Publication) {
                 }
             }
 
-            // Affichage du champ de commentaire
+            // 🔹 CHAMP DE COMMENTAIRE
             if (showCommentInput) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     OutlinedTextField(
@@ -287,7 +345,6 @@ fun PublicationCard(publication: Publication) {
 
                                     val newCommentRef = commentsRef.push()
                                     val commentData = mapOf(
-                                        //"uid" to userId,
                                         "nomUtilisateur" to username,
                                         "message" to commentText
                                     )

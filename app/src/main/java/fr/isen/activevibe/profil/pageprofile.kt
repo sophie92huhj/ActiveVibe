@@ -43,6 +43,9 @@ import android.widget.Toast
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import com.google.firebase.database.DatabaseReference
+import android.content.Intent
+import fr.isen.activevibe.ConnexionActivity
+
 
 @Composable
 fun App() {
@@ -84,7 +87,7 @@ fun ProfileScreen(onEditClick: () -> Unit) {
                     nomUtilisateur = snapshot.child("nomUtilisateur").getValue(String::class.java) ?: "Utilisateur inconnu"
                     profileImageUrl = snapshot.child("profileImageUrl").getValue(String::class.java) ?: ""
 
-                    //  récupérer les publications de cet utilisateur
+                    // récupérer les publications de cet utilisateur
                     val publicationsRef = FirebaseDatabase.getInstance().reference.child("publications")
                     publicationsRef.orderByChild("nomUtilisateur").equalTo(nomUtilisateur)
                         .addListenerForSingleValueEvent(object : ValueEventListener {
@@ -115,21 +118,6 @@ fun ProfileScreen(onEditClick: () -> Unit) {
         }
     }
 
-    LaunchedEffect(userId) {
-        userId?.let {
-            database.child(it).get().addOnSuccessListener { snapshot ->
-                if (snapshot.exists()) {
-                    nomUtilisateur = snapshot.child("nomUtilisateur").getValue(String::class.java) ?: "Utilisateur inconnu"
-                    profileImageUrl = snapshot.child("profileImageUrl").getValue(String::class.java) ?: ""
-                } else {
-                    nomUtilisateur = "Utilisateur introuvable"
-                }
-            }.addOnFailureListener {
-                nomUtilisateur = "Erreur chargement"
-            }
-        }
-    }
-
     val context = LocalContext.current
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -146,35 +134,33 @@ fun ProfileScreen(onEditClick: () -> Unit) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        //  Alignement de la photo et du nom d'utilisateur
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
-            //  Photo de profil
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .background(Color.Gray, shape = CircleShape)
-                    .clip(CircleShape)
-                    .clickable { imagePickerLauncher.launch("image/*") },
-                contentAlignment = Alignment.Center
+            // Photo et nom utilisateur
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                when {
-                    profileImageUri != null -> {
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .background(Color.Gray, shape = CircleShape)
+                        .clip(CircleShape)
+                        .clickable { imagePickerLauncher.launch("image/*") },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (profileImageUri != null) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            contentDescription = "Image de profil par défaut",
+                            contentDescription = "Image de profil",
                             modifier = Modifier.size(120.dp),
                             contentScale = ContentScale.Crop
                         )
-                    }
-                    !profileImageUrl.isNullOrEmpty() -> {
+                    } else {
                         Image(
                             painter = rememberAsyncImagePainter(profileImageUrl),
                             contentDescription = "Photo de profil",
@@ -182,70 +168,86 @@ fun ProfileScreen(onEditClick: () -> Unit) {
                             contentScale = ContentScale.Crop
                         )
                     }
-                    else -> {
-                        Image(
-                            painter = painterResource(R.drawable.profile),
-                            contentDescription = "Image de profil par défaut",
-                            modifier = Modifier.size(120.dp),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column {
+                    Text(text = nomUtilisateur, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.height(25.dp))
 
-            // 🔹 Nom d'utilisateur et nom
-            Column {
-                Text(text = nomUtilisateur, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            // Boutons
+            Button(
+                onClick = onEditClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE0E0E0),
+                    contentColor = Color(0xFF424242)
+                ),
+                shape = CircleShape, // Forme ronde
+                modifier = Modifier
+                    .wrapContentWidth() // Largeur ajustée automatiquement
+                    .height(40.dp) // Hauteur de 40.dp
+            ) {
+                Text(
+                    text = "Éditer le profil",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Statistiques et publications de l'utilisateur
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                ProfileStat(publicationCount.toString(), "Posts")
+                ProfileStat("673", "Abonnés")
+                ProfileStat("710", "Abonnements")
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Afficher les publications
+            userId?.let { UserPublications(it) }
         }
 
-        Spacer(modifier = Modifier.height(25.dp))
-
-
-        //  Bouton d'édition du profil
+        // Bouton de déconnexion en haut à droite
         Button(
-            onClick = onEditClick,
+            onClick = {
+                FirebaseAuth.getInstance().signOut()
+                Toast.makeText(context, "Déconnexion réussie", Toast.LENGTH_SHORT).show()
+
+                // Redirection vers ConnexionActivity après déconnexion réussie
+                val intent = Intent(context, ConnexionActivity::class.java)
+                context.startActivity(intent)
+            },
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFE0E0E0),
-                contentColor = Color(0xFF424242)
+                containerColor = Color(0xFFDD2C00),
+                contentColor = Color.White
             ),
             shape = RoundedCornerShape(12.dp),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
-            border = BorderStroke(1.dp, Color(0xFFB0B0B0)),
             modifier = Modifier
-                .wrapContentWidth()
-                .height(40.dp)
+                .align(Alignment.TopEnd) // Alignement du bouton en haut à droite
+                .padding(16.dp)
         ) {
             Text(
-                text = "Éditer le profil",
+                text = "Se déconnecter",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.5.sp
+                fontWeight = FontWeight.Medium
             )
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
 
-
-
-        //  Statistiques du profil
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround
-        ) {
-            ProfileStat(publicationCount.toString(), "Posts")
-            ProfileStat("673", "Abonnés")
-            ProfileStat("710", "Abonnements")
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-//  Afficher les publications de l'utilisateur
-        userId?.let { UserPublications(it) }
     }
+
+
 }
+
 
 
 
@@ -477,22 +479,22 @@ fun PublicationCard(publication: Publication) {
                 }
 
                 //  Icône de la poubelle pour supprimer
-                   IconButton(
-                        onClick = { deletePublication(database, publication.id, context) },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Supprimer",
-                            tint = Color.Black
-                        )
-                    }
-                    }
+                IconButton(
+                    onClick = { deletePublication(database, publication.id, context) },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Supprimer",
+                        tint = Color.Black
+                    )
                 }
             }
+        }
     }
+}
 
 
 

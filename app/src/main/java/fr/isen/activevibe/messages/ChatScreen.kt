@@ -52,7 +52,15 @@ fun ChatScreen(receiverName: String, onBack: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Button(onClick = onBack) { Text("Retour") }
+            Button(
+                onClick = onBack,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF433AF1), // Gris foncé
+                    contentColor = Color.White // Texte en blanc
+                )
+            ) {
+                Text("Retour")
+            }
             Spacer(modifier = Modifier.width(8.dp))
             Text("Chat avec $receiverName", fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
@@ -95,7 +103,11 @@ fun ChatScreen(receiverName: String, onBack: () -> Unit) {
                         MessagesRepository.sendMessage(currentUsername, receiverName, messageText)
                         messageText = "" // ✅ Réinitialiser le champ après l'envoi
                     }
-                }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF433AF1), // Bleu clair
+                    contentColor = Color.White // Texte en blanc
+                )
             ) {
                 Text("Envoyer")
             }
@@ -103,26 +115,28 @@ fun ChatScreen(receiverName: String, onBack: () -> Unit) {
     }
 }
 
-
 @Composable
 fun MessageBubble(message: Message, isMine: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(vertical = 4.dp, horizontal = 8.dp),
         horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start
     ) {
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = if (isMine) Color(0xFF433AF1) else Color.LightGray
+                containerColor = if (isMine) Color(0xFF64B5F6) else Color(0xFFE0E0E0) // ✅ Bleu clair pour l'envoi, gris clair pour la réception
             ),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.padding(4.dp)
+            shape = RoundedCornerShape(24.dp), // ✅ Arrondi plus prononcé
+            modifier = Modifier
+                .widthIn(min = 50.dp, max = 300.dp) // ✅ Largeur dynamique
+                .padding(horizontal = 4.dp)
         ) {
             Text(
                 text = message.text,
                 color = if (isMine) Color.White else Color.Black,
-                modifier = Modifier.padding(8.dp)
+                fontSize = 16.sp, // ✅ Texte plus lisible
+                modifier = Modifier.padding(vertical = 10.dp, horizontal = 14.dp)
             )
         }
     }

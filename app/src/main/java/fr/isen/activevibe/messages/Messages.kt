@@ -7,8 +7,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import coil.compose.rememberAsyncImagePainter
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
+import androidx.compose.foundation.Image
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,10 +55,10 @@ object MessagesRepository {
         val conversationA = database.child("${sender}_$receiver")
         val conversationB = database.child("${receiver}_$sender")
 
-        // ✅ Sauvegarder dans `messages/userA_userB`
+        // ✅ Sauvegarder dans messages/userA_userB
         conversationA.push().setValue(message)
 
-        // ✅ Sauvegarder dans `messages/userB_userA`
+        // ✅ Sauvegarder dans messages/userB_userA
         conversationB.push().setValue(message)
     }
 
@@ -112,6 +114,25 @@ object MessagesRepository {
                 Log.e("MessagesRepository", "Erreur chargement utilisateurs : ${error.message}")
             }
         })
+    }
+
+    fun getProfileImageUrl(userName: String, onResult: (String?) -> Unit) {
+        usersDatabase.orderByChild("nomUtilisateur").equalTo(userName)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    for (child in snapshot.children) {
+                        val imageUrl = child.child("profileImageUrl").getValue(String::class.java)
+                        onResult(imageUrl) // ✅ Retourne l'URL de l'image
+                        return
+                    }
+                    onResult(null) // ✅ Si aucune image trouvée, renvoyer `null`
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e("MessagesRepository", "Erreur récupération photo de profil : ${error.message}")
+                    onResult(null)
+                }
+            })
     }
 
     fun listenForMessages(currentUser: String, chatPartner: String, onMessagesUpdated: (List<Message>) -> Unit) {
@@ -192,9 +213,17 @@ fun Message() {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Button(onClick = { showSearch = !showSearch }, modifier = Modifier.fillMaxWidth()) {
-            Text(if (showSearch) "Fermer la recherche" else "Nouvelle discussion")
+        Button(
+            onClick = { showSearch = !showSearch },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF433AF1)) // ✅ Couleur bleue
+        ) {
+            Text(
+                text = if (showSearch) "Fermer la recherche" else "Nouvelle discussion",
+                color = Color.White // ✅ Texte en blanc pour le contraste
+            )
         }
+
 
         Spacer(modifier = Modifier.height(10.dp))
 
@@ -250,6 +279,14 @@ fun Message() {
             LazyColumn {
                 items(conversations) { conversationId ->
                     val chatPartnerName = conversationId.split("_").last()
+                    var profileImageUrl by remember { mutableStateOf<String?>(null) }
+
+                    // ✅ Charger l'image de profil pour chaque utilisateur
+                    LaunchedEffect(chatPartnerName) {
+                        MessagesRepository.getProfileImageUrl(chatPartnerName) { url ->
+                            profileImageUrl = url
+                        }
+                    }
 
                     Row(
                         modifier = Modifier
@@ -258,6 +295,7 @@ fun Message() {
                             .clickable { selectedChatUser = chatPartnerName },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // ✅ Afficher l'image de profil
                         Box(
                             modifier = Modifier
                                 .size(50.dp)
@@ -265,11 +303,19 @@ fun Message() {
                                 .background(Color.Gray),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = chatPartnerName.first().toString().uppercase(),
-                                color = Color.White,
-                                fontSize = 20.sp
-                            )
+                            if (!profileImageUrl.isNullOrEmpty()) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(profileImageUrl),
+                                    contentDescription = "Photo de profil",
+                                    modifier = Modifier.size(50.dp)
+                                )
+                            } else {
+                                Text(
+                                    text = chatPartnerName.first().toString().uppercase(),
+                                    color = Color.White,
+                                    fontSize = 20.sp
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.width(12.dp))

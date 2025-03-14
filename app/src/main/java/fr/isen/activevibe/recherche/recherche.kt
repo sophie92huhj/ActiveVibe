@@ -264,11 +264,7 @@ fun AutreProfilScreen(username: String, onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(15.dp))
 
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(text = "À propos de moi", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-        }
 
-        Spacer(modifier = Modifier.height(15.dp))
 
         // Statistiques
         Row(

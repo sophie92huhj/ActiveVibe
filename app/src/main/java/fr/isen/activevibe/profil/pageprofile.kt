@@ -204,17 +204,6 @@ fun ProfileScreen(onEditClick: () -> Unit) {
         Spacer(modifier = Modifier.height(25.dp))
 
 
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(text = "À propos de moi", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Text(
-                text = "Ajouter une biographie",
-                fontSize = 14.sp,
-                color = Color.Gray
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
         //  Bouton d'édition du profil
         Button(
             onClick = onEditClick,
@@ -238,6 +227,8 @@ fun ProfileScreen(onEditClick: () -> Unit) {
         }
 
         Spacer(modifier = Modifier.height(20.dp))
+
+
 
         //  Statistiques du profil
         Row(
